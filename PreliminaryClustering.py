@@ -150,12 +150,17 @@ class PreliminaryClustering:
             print("---- Generate histograms of video sequences... ----")
         histograms_of_videos = []
         for video_fv in self.fisher_vectors:
+            #print("videofv", video_fv)
             current_video_fv = video_fv[0]
+            #print("currentvideo", current_video_fv)
             video_histogram = np.zeros(self.n_kernels)
+            #print("video histogram", video_histogram)
             for frame in current_video_fv:
+                #print("frame", frame)
                 for index_configuration in range(0, self.n_kernels):
                     video_histogram[index_configuration] += sum(frame[index_configuration]) + \
                                                             sum(frame[index_configuration + self.n_kernels])
+            
             video_histogram = video_histogram / sum(video_histogram)
             histograms_of_videos.append(video_histogram)
         return histograms_of_videos
@@ -173,7 +178,7 @@ class PreliminaryClustering:
                 output += " (with threshold=" + str(
                     self.threshold_neutral) +")"
             output += "... ----"
-            print(output)
+            #print(output)
         seq_df = pd.read_csv(self.seq_df_path)
         index_neutral_configurations = []
         for seq_num in self.train_video_idx:
@@ -207,7 +212,7 @@ class PreliminaryClustering:
                                        histo_figures_path=None):
         """
         Execute preliminary clustering using the parameters passed to class constructor.
-        If plot_and_save_histo is setted on True value the figures of histograms of videos is saved in files
+        If plot_and_save_histograms is setted on True value the figures of histograms of videos is saved in files
         """
 
         velocities = self.__get_velocities_frames()

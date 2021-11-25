@@ -1,0 +1,6 @@
+#round,#clusters,threshold,#relevant_clusters,Mean Absolute Error
+1,2,0.3,0,None
+2,2,0.3,0,None
+3,2,0.3,0,None
+4,2,0.3,0,None
+5,2,0.3,0,None
