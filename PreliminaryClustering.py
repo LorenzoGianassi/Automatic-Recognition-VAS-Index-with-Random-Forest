@@ -7,9 +7,6 @@ import matplotlib.pyplot as plt
 import matplotlib
 
 matplotlib.use('Agg')
-
-
-
 class PreliminaryClustering:
     """Class that is responsible for obtaining the relevant configurations for the classification of the VAS index. """
 

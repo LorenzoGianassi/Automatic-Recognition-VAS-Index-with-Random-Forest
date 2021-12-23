@@ -103,10 +103,12 @@ if __name__ == '__main__':
             current_path_cm = path_confusion_matrices + "conf_matrix_test_" + str(test_idx) + ".png"
             current_error, current_confusion_matrix = model_rfr.evaluate_performance(path_scores_parameters=current_test_path_error,
                                                                                      path_scores_cm=current_path_cm)
+            print("current_confusion_matrix", current_confusion_matrix)
             current_cm_pain_level = model_rfr.evaluate_performance_on_scaled_pain()
             errors.append(current_error)
             print("-- Mean Absolute Error: " + str(current_error)+" --")
             confusion_matrix += current_confusion_matrix
+            #print("confusion_matrix", confusion_matrix)
             confusion_matrix_pain_levels += current_cm_pain_level
 
 

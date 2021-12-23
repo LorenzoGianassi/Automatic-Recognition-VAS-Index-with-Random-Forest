@@ -73,9 +73,8 @@ class ModelRFR:
 
         training_set_histo = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.train_video_idx])
         training_set_vas = np.asarray([self.vas_sequences[i] for i in self.train_video_idx])
-        model_rfr = RandomForestRegressor(n_estimators=3, max_depth=1)
-        print("training_set_histo", len(training_set_histo[0]))
-        print("training_set_vas", training_set_vas)
+        model_rfr = RandomForestRegressor(n_estimators=2, max_depth=None, max_features="auto")
+
         return model_rfr.fit(training_set_histo, training_set_vas)
 
     def __print(self,model_rfr):
@@ -124,8 +123,14 @@ class ModelRFR:
     def evaluate_performance(self, path_scores_parameters=None, path_scores_cm=None):
         test_set_desc = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.test_video_idx])
         test_set_vas = np.asarray([self.vas_sequences[i] for i in self.test_video_idx])
+        train_set_desc = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.train_video_idx])
+        train_set_vas = np.asarray([self.vas_sequences[i] for  i in self.train_video_idx])
         num_test_videos = test_set_desc.shape[0]
+        num_train_videos = train_set_desc.shape[0]
+        print("num_test_videos", num_test_videos)
+        print("num_train_videos", num_train_videos)
         sum_error = 0
+        sum_error_train = 0
         confusion_matrix = np.zeros(shape=(11, 11))
         real__vas = []
         predicted__vas = []
@@ -138,17 +143,33 @@ class ModelRFR:
             predicted__vas.append(vas_predicted)
             error = abs(real_vas-vas_predicted)
             sum_error += error
+            #print("sum_error", sum_error)
             if path_scores_parameters is not None:
                 data = np.hstack(
                     (np.array([self.test_video_idx[num_video], real_vas, vas_predicted, error]).reshape(1, -1)))
                 out_df_scores = out_df_scores.append(pd.Series(data.reshape(-1), index=out_df_scores.columns),
                                                      ignore_index=True)
             confusion_matrix[real_vas][vas_predicted] += 1
+            #print("confusion_matrix[real_vas][vas_predicted]", confusion_matrix[real_vas][vas_predicted])
+            #print("confusion_matrix", confusion_matrix)
+        for num_video in np.arange(num_train_videos):
+            real_vas = train_set_vas[num_video]
+            real__vas.append(real_vas)
+            vas_predicted = self.__predict(train_set_desc[num_video].reshape(1,-1))
+            predicted__vas.append(vas_predicted)
+            error = abs(real_vas-vas_predicted)
+            sum_error_train += error
+            #print("sum_error_train", sum_error_train)
+        
         if path_scores_parameters is not None:
             out_df_scores.to_csv(path_scores_parameters, index=False, header=True)
         if path_scores_cm is not None:
             plot_matrix(cm=confusion_matrix, labels=np.arange(0, 11), normalize=True, fname=path_scores_cm)
+        
         mean_error = round(sum_error / num_test_videos, 3)
+        mean_error_train = round(sum_error_train / num_train_videos, 3)
+        #print("mean_error",mean_error)
+        #print("mean_error_train",mean_error_train)
         return mean_error, confusion_matrix
 
     def __predict(self, sequence_descriptor):

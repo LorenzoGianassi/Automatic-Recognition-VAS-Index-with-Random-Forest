@@ -51,10 +51,7 @@ def get_training_and_test_idx(num_videos, cross_val_protocol, seq_df_path):
                 subjects_offset = len(subject_idxs)
             for subject_test in np.arange(subjects_test_offset, subjects_offset):
                 idxs_test.append(subject_idxs[subject_test])
-                print(idxs_test)
-            print(idxs_test)
             idxs_test = sum(idxs_test, [])
-            print(idxs_test)
             all_test_idx.append(np.array(idxs_test))
             all_training_idx.append(np.delete(np.arange(0, num_videos), idxs_test))
     elif cross_val_protocol == "Leave-One-Sequence-Out":
@@ -69,7 +66,9 @@ def plot_matrix(cm, labels, fname, normalize=True):
     # Normalize confusion matrix
     if normalize:
         for row_idx in np.arange(cm.shape[0]):
+            #print("cm[row_idx]: ", cm[row_idx])
             sum_row = sum(cm[row_idx])
+            #print("sum_row: ", sum_row)
             if sum_row > 0:
                 cm[row_idx] = cm[row_idx] / sum_row
     df_cm = pd.DataFrame(cm, index=[str(i) for i in labels],
