@@ -1,15 +1,20 @@
+from os import error
 import pandas as pd
 import pickle
 import numpy as np
+from pprint import pprint
+from scipy.sparse.construct import random
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
+import sklearn.metrics as sm
 from utils import plot_matrix
-from subprocess import call
-from sklearn.tree import export_graphviz
 import matplotlib.pyplot as plt
 from sklearn.tree import plot_tree
-from sklearn.datasets import load_wine
+from sklearn.experimental import enable_halving_search_cv
+from sklearn.model_selection import HalvingRandomSearchCV
+from sklearn.model_selection import RandomizedSearchCV
+from scipy.stats import randint
 
 class ModelRFR:
     """Class that deals with training a Random Forest starting from the relevant configurations
@@ -27,6 +32,7 @@ class ModelRFR:
         self.verbose = verbose # define if the output must be printed in the class
         self.weighted_samples = weighted_samples  # define if the samples must be weighted for the model fitting
         self.sample_weights = None  # sample weights (populated only if weighted_samples=True)
+
 
     def __generate_descriptors_relevant_configuration(self):
         """
@@ -64,27 +70,57 @@ class ModelRFR:
             vas_sequences.append(seq_df.iloc[num_video][1])
         return vas_sequences
 
-
     def __train(self):
         """
         Train RFT using fisher vectors calculated and vas indexes readed of the sequences.
         Return the trained classifier
         """
-
         training_set_histo = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.train_video_idx])
         training_set_vas = np.asarray([self.vas_sequences[i] for i in self.train_video_idx])
-        model_rfr = RandomForestRegressor(n_estimators=2, max_depth=None, max_features="auto")
+        random_forest = RandomForestRegressor(random_state = 42)
+        #print('----Parameters currently in use: ----')
+        #pprint(random_forest.get_params())
 
-        return model_rfr.fit(training_set_histo, training_set_vas)
+        # Grid creation
+        # Number of trees in random forest
+        n_estimators = [int(x) for x in np.linspace(start = 200, stop = 2000, num = 10)]
+        # Number of features to consider at every split
+        max_features = ['auto', 'sqrt']
+        # Maximum number of levels in tree
+        max_depth = [int(x) for x in np.linspace(10, 110, num = 11)]
+        max_depth.append(None)
+        # Minimum number of samples required to split a node
+        min_samples_split = [2, 5, 10]
+        # Minimum number of samples required at each leaf node
+        min_samples_leaf = [1, 2, 4]
+        # Method of selecting samples for training each tree
+        bootstrap = [True, False]
+
+        # Create the random grid
+        random_grid = {'n_estimators': n_estimators,
+                    'max_features': max_features,
+                    'max_depth': max_depth,
+                    'min_samples_split': min_samples_split,
+                    'min_samples_leaf': min_samples_leaf,
+                    'bootstrap': bootstrap}
+
+        random_forest_randomized = RandomizedSearchCV(estimator=random_forest, param_distributions=random_grid,
+                              n_iter = 100, scoring='neg_mean_absolute_error', 
+                              cv = 2, verbose=0, random_state=42, n_jobs=-1,
+                              return_train_score=True)
+        #model_rfr = RandomForestRegressor(n_estimators=1, criterion="squared_error" , max_depth = None, max_features="auto", min_samples_split = 2 , min_samples_leaf=10, n_jobs=-1, bootstrap=True, random_state=42)        
+        random_forest_randomized.fit(training_set_histo, training_set_vas)
+        self.random_model = random_forest_randomized
 
     def __print(self,model_rfr):
         for i in np.arange(len(model_rfr.estimators_)):
             estimator=model_rfr.estimators_[i]
-            fig=plt.figure(figsize=(100, 100), dpi=80)
+            figure=plt.figure(figsize=(100, 100), dpi=80)
+            plt.clf()
             plot_tree(estimator, 
                     filled=True, impurity=True, 
                     rounded=True)
-            fig.savefig('tree' + str(i) + '.png')
+            figure.savefig('tree' + str(i) + '.png')
             
 
 
@@ -99,10 +135,47 @@ class ModelRFR:
                 self.__calculate_sample_weights()
             # if train_by_max_score == True:
             #     self.model = self.__train_maximizing_score(n_jobs=n_jobs)
-            self.model = self.__train()
-            self.__print(self.model)
+            self.__train()
+            self.compare_random()
+            
+
+
+            #self.__print(self.model)
             # if model_dump_path is not None:
             #     self.__dump_on_pickle(model_dump_path)
+    
+    def evaluate(self, model, test_features, test_labels):
+        predictions = model.predict(test_features)
+        print("prediction", predictions)
+        errors = abs(predictions - test_labels)
+        print("test label", test_labels)
+        mape = 100 * (errors / test_labels)
+        accuracy = 100 - np.mean(mape[np.isfinite(mape)])
+        mean_errors = np.mean(errors)
+        print(mean_errors)
+        print("Explain variance score =", round(sm.explained_variance_score(test_labels, predictions), 2)) 
+        print("R2 score =", round(sm.r2_score(test_labels, predictions), 2))
+        print('Model Performance')
+        print('Average Error: {:0.4f}.'.format(mean_errors))
+        print('Accuracy = {:0.2f}%.'.format(accuracy))
+    
+        return mean_errors,accuracy
+
+    def compare_random(self):
+        base_model = RandomForestRegressor(n_estimators = 10, random_state = 42)
+        test_set_desc = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.test_video_idx])
+        test_set_vas = np.asarray([self.vas_sequences[i] for i in self.test_video_idx])
+        train_set_desc = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.train_video_idx])
+        train_set_vas = np.asarray([self.vas_sequences[i] for  i in self.train_video_idx])
+        base_model.fit(train_set_desc, train_set_vas)
+        
+        error,base_accuracy = self.evaluate(base_model, test_set_desc, test_set_vas)
+        
+        best_random = self.random_model.best_estimator_
+        random_accuracy = self.evaluate(best_random, test_set_desc, test_set_vas)
+        #print('Improvement of {:0.2f}%.'.format( 100 * (random_accuracy - base_accuracy) / base_accuracy))
+        return error
+
 
     def __calculate_sample_weights(self):
         vas_occ = {}
@@ -125,6 +198,7 @@ class ModelRFR:
         test_set_vas = np.asarray([self.vas_sequences[i] for i in self.test_video_idx])
         train_set_desc = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.train_video_idx])
         train_set_vas = np.asarray([self.vas_sequences[i] for  i in self.train_video_idx])
+        self.compare_random()
         num_test_videos = test_set_desc.shape[0]
         num_train_videos = train_set_desc.shape[0]
         print("num_test_videos", num_test_videos)
@@ -143,15 +217,12 @@ class ModelRFR:
             predicted__vas.append(vas_predicted)
             error = abs(real_vas-vas_predicted)
             sum_error += error
-            #print("sum_error", sum_error)
             if path_scores_parameters is not None:
                 data = np.hstack(
                     (np.array([self.test_video_idx[num_video], real_vas, vas_predicted, error]).reshape(1, -1)))
                 out_df_scores = out_df_scores.append(pd.Series(data.reshape(-1), index=out_df_scores.columns),
                                                      ignore_index=True)
             confusion_matrix[real_vas][vas_predicted] += 1
-            #print("confusion_matrix[real_vas][vas_predicted]", confusion_matrix[real_vas][vas_predicted])
-            #print("confusion_matrix", confusion_matrix)
         for num_video in np.arange(num_train_videos):
             real_vas = train_set_vas[num_video]
             real__vas.append(real_vas)
@@ -159,17 +230,25 @@ class ModelRFR:
             predicted__vas.append(vas_predicted)
             error = abs(real_vas-vas_predicted)
             sum_error_train += error
-            #print("sum_error_train", sum_error_train)
         
         if path_scores_parameters is not None:
             out_df_scores.to_csv(path_scores_parameters, index=False, header=True)
         if path_scores_cm is not None:
             plot_matrix(cm=confusion_matrix, labels=np.arange(0, 11), normalize=True, fname=path_scores_cm)
         
+        predictions = self.model.predict(test_set_desc)
+        print("prediction", predictions)
+        errors = abs(predictions - test_set_vas)
+        print("errors", errors)
+        mape = 100 * np.mean(errors / test_set_vas)
+        print("mape", mape)
+        accuracy = 100 - mape
+        print('Model Performance')
+        print('Average Error: {:0.4f}.'.format(np.mean(errors)))
+        print('Accuracy = {:0.2f}%.'.format(accuracy))
         mean_error = round(sum_error / num_test_videos, 3)
         mean_error_train = round(sum_error_train / num_train_videos, 3)
-        #print("mean_error",mean_error)
-        #print("mean_error_train",mean_error_train)
+
         return mean_error, confusion_matrix
 
     def __predict(self, sequence_descriptor):

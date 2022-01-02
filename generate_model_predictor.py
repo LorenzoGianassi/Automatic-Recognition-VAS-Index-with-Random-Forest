@@ -1,7 +1,8 @@
+from os import error
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
+import gc
 from PreliminaryClustering import PreliminaryClustering
 from ModelRFR import ModelRFR
 from configuration import config
@@ -49,11 +50,12 @@ n_jobs = config.n_jobs
 
 if __name__ == '__main__':
     dir_paths = [path_results, path_errors, path_confusion_matrices, path_gmm_means]
+    gc.collect()
     if save_histo_figures:
         dir_paths.append(path_histo_figures)
     file_paths = [coord_df_path, seq_df_path]
     check_existing_paths(dir_paths=dir_paths, file_paths=file_paths)
-    out_df_scores = pd.DataFrame(columns=['#round', '#clusters', 'threshold', '#relevant_clusters', 'Mean Absolute Error'])
+    out_df_scores = pd.DataFrame(columns=['Round', 'N kernels GMM', 'Threshold', 'Relevant Clusters', 'Mean Absolute Error'])
     n_test = len(train_video_idx)
     errors = []
     confusion_matrix = np.zeros(shape=(11, 11))
@@ -101,26 +103,26 @@ if __name__ == '__main__':
             print("-- Calculate scores for trained SVR... --")
             current_test_path_error = path_errors+"errors_test_"+str(test_idx)+".csv"
             current_path_cm = path_confusion_matrices + "conf_matrix_test_" + str(test_idx) + ".png"
-            current_error, current_confusion_matrix = model_rfr.evaluate_performance(path_scores_parameters=current_test_path_error,
-                                                                                     path_scores_cm=current_path_cm)
-            print("current_confusion_matrix", current_confusion_matrix)
-            current_cm_pain_level = model_rfr.evaluate_performance_on_scaled_pain()
-            errors.append(current_error)
-            print("-- Mean Absolute Error: " + str(current_error)+" --")
-            confusion_matrix += current_confusion_matrix
+            #current_error, current_confusion_matrix = model_rfr.evaluate_performance(path_scores_parameters=current_test_path_error,path_scores_cm=current_path_cm)
+            #print("current_confusion_matrix", current_confusion_matrix)
+            #current_cm_pain_level = model_rfr.evaluate_performance_on_scaled_pain()
+            #errors.append(current_error)
+            #print("-- Mean Absolute Error: " + str(current_error)+" --")
+            #confusion_matrix += current_confusion_matrix
             #print("confusion_matrix", confusion_matrix)
-            confusion_matrix_pain_levels += current_cm_pain_level
+            #confusion_matrix_pain_levels += current_cm_pain_level
+            errors = model_rfr.compare_random()
+            print(errors)
 
-
-        out_df_scores = save_data_on_csv([test_idx+1, n_kernels_current_GMM, threshold_current_clustering, num_relevant_config, current_error],
-                                    out_df_scores, path_results_csv)
+        #out_df_scores = save_data_on_csv([test_idx+1, n_kernels_current_GMM, threshold_current_clustering, num_relevant_config, current_error],
+        #                            out_df_scores, path_results_csv)
         current_path_gmm_means_csv = path_gmm_means + "gmm_means_test_" + str(test_idx) + ".csv"
         current_path_clusters_png = path_gmm_means + "gmm_clusters_test_" + str(test_idx) + ".png"
         save_GMM_mean_info(preliminary_clustering.gmm.means, selected_lndks_idx, current_path_gmm_means_csv, current_path_clusters_png)
 
     mean_error = sum(errors) / n_test
     mean_error = round(mean_error, 3)
-    print("Mean Absolute Error: " + str(mean_error))
+    print("Total Mean Absolute Error: " + str(mean_error))
 
     path_errors = path_results + "graphics_errors.png"
     path_conf_matrix = path_results + "confusion_matrix.png"
@@ -134,12 +136,15 @@ if __name__ == '__main__':
     plot_matrix(cm=confusion_matrix_pain_levels, labels=labels_cm, normalize=True, fname=path_conf_matrix_pain_levels)
     print("Overall confusion matrix on pain level saved in png files on path '" + path_conf_matrix_pain_levels + "'")
 
+    """
+    plt.clf()
     plt.bar(np.arange(1, n_test+1), errors, color="blue")
     plt.axhline(y=mean_error, xmin=0, xmax=n_test+1, color="red", label='Mean Absolute Error: '+str(mean_error))
-    plt.ylabel("Average of the Mean Absolute Error")
-    plt.xlabel("Num round")
-    plt.title("Mean Absolute Errors")
+    plt.ylabel("Average of the Mean Absolute Error",  fontsize=15)
+    plt.xlabel("Num round", fontsize=15)
+    plt.title("Mean Absolute Errors", fontsize=15)
     plt.legend()
     plt.savefig(path_errors)
     plt.close()
     print("Histogram of the mean absolute error detected saved in a png file on path '" + path_results+"'")
+    """

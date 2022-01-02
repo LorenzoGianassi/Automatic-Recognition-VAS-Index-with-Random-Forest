@@ -2,6 +2,7 @@ import csv
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from numpy import random
 import seaborn as sn
 import pandas as pd
 from sklearn import manifold
@@ -30,6 +31,7 @@ def get_subjects_seq_idx(seq_df_path):
             subjects_idxs[subject_count] = []
         subjects_idxs[subject_count].append(seq_num)
         seq_name = seq_df.iloc[seq_num][0]
+        #print("subject_inx", subjects_idxs)
     return subjects_idxs
 
 
@@ -41,8 +43,14 @@ def get_training_and_test_idx(num_videos, cross_val_protocol, seq_df_path):
     if cross_val_protocol == "Leave-One-Subject-Out":
         for subject_test in np.arange(num_subject):
             idxs_test = subject_idxs[subject_test]
-            all_test_idx.append(np.array(idxs_test))
-            all_training_idx.append(np.delete(np.arange(0, num_videos), idxs_test))
+            get_test_idx = np.array(idxs_test)
+            random.shuffle(get_test_idx)
+            all_test_idx.append(get_test_idx)
+            get_training_idx = np.delete(np.arange(0, num_videos), idxs_test)
+            random.shuffle(get_training_idx)
+            all_training_idx.append(get_training_idx)
+            #print("test: ",all_test_idx)
+            #print("train: ",all_training_idx)
     elif cross_val_protocol == "5-fold-cross-validation":
         for subjects_test_offset in np.arange(0, num_subject, 5):
             idxs_test = []
@@ -52,8 +60,14 @@ def get_training_and_test_idx(num_videos, cross_val_protocol, seq_df_path):
             for subject_test in np.arange(subjects_test_offset, subjects_offset):
                 idxs_test.append(subject_idxs[subject_test])
             idxs_test = sum(idxs_test, [])
-            all_test_idx.append(np.array(idxs_test))
-            all_training_idx.append(np.delete(np.arange(0, num_videos), idxs_test))
+            get_test_idx = np.array(idxs_test)
+            random.shuffle(get_test_idx)
+            all_test_idx.append(get_test_idx)
+            get_training_idx = np.delete(np.arange(0, num_videos), idxs_test)
+            random.shuffle(get_training_idx)
+            all_training_idx.append(get_training_idx)
+            #print("test: ",all_test_idx)
+            #print("train: ",all_training_idx)
     elif cross_val_protocol == "Leave-One-Sequence-Out":
         for video_idx in np.arange(0, num_videos):
             all_test_idx.append(np.asarray([video_idx]))
