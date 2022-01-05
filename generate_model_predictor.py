@@ -58,6 +58,8 @@ if __name__ == '__main__':
     out_df_scores = pd.DataFrame(columns=['Round', 'N kernels GMM', 'Threshold', 'Relevant Clusters', 'Mean Absolute Error'])
     n_test = len(train_video_idx)
     errors = []
+    base_errors_list = []
+    best_errors_list = []
     confusion_matrix = np.zeros(shape=(11, 11))
     confusion_matrix_pain_levels = np.zeros(shape=(3, 3))
     if fit_by_bic:
@@ -91,7 +93,7 @@ if __name__ == '__main__':
             print("-- No relevant configurations were found using "+str(n_kernels_current_GMM)+" kernels and "+str(threshold_current_clustering)+" for the threshold of neutral configurations "
                   "(try to lower the threshold by analyzing the histograms produced by clustering in the test module )--")
             current_error = current_accuracy = "None"
-        else:
+        elif config.train_type == "normal_train":
             print("-- Preliminary clustering ended: "+str(num_relevant_config)+" relevant clusters founded --")
             model_rfr = ModelRFR(seq_df_path=seq_df_path,
                                  train_video_idx=train_videos,
@@ -103,16 +105,32 @@ if __name__ == '__main__':
             print("-- Calculate scores for trained SVR... --")
             current_test_path_error = path_errors+"errors_test_"+str(test_idx)+".csv"
             current_path_cm = path_confusion_matrices + "conf_matrix_test_" + str(test_idx) + ".png"
-            #current_error, current_confusion_matrix = model_rfr.evaluate_performance(path_scores_parameters=current_test_path_error,path_scores_cm=current_path_cm)
-            #print("current_confusion_matrix", current_confusion_matrix)
-            #current_cm_pain_level = model_rfr.evaluate_performance_on_scaled_pain()
-            #errors.append(current_error)
-            #print("-- Mean Absolute Error: " + str(current_error)+" --")
-            #confusion_matrix += current_confusion_matrix
-            #print("confusion_matrix", confusion_matrix)
-            #confusion_matrix_pain_levels += current_cm_pain_level
-            errors = model_rfr.compare_random()
-            print(errors)
+            current_error, current_confusion_matrix = model_rfr.evaluate_performance(path_scores_parameters=current_test_path_error,path_scores_cm=current_path_cm)
+            print("current_confusion_matrix", current_confusion_matrix)
+            current_cm_pain_level = model_rfr.evaluate_performance_on_scaled_pain()
+            errors.append(current_error)
+            print("-- Mean Absolute Error: " + str(current_error)+" --")
+            confusion_matrix += current_confusion_matrix
+            print("confusion_matrix", confusion_matrix)
+            confusion_matrix_pain_levels += current_cm_pain_level
+        elif config.train_type == "randomized_train":
+            print("-- Preliminary clustering ended: "+str(num_relevant_config)+" relevant clusters founded --")
+            model_rfr = ModelRFR(seq_df_path=seq_df_path,
+                                 train_video_idx=train_videos,
+                                 test_video_idx=test_videos,
+                                 preliminary_clustering=preliminary_clustering,
+                                 weighted_samples=weighted_samples)
+            print("-- Train and save SVR model... --")
+            model_rfr.train_RFR(n_jobs=n_jobs)
+            print("-- Calculate scores for trained SVR... --")
+            current_test_path_error = path_errors+"errors_test_"+str(test_idx)+".csv"
+            current_path_cm = path_confusion_matrices + "conf_matrix_test_" + str(test_idx) + ".png"
+            base_errors, best_errors = model_rfr.compare_random()
+            base_errors_list.append(base_errors)
+            best_errors_list.append(best_errors)
+            print("base",base_errors_list)
+            print("best", best_errors_list)
+            
 
         #out_df_scores = save_data_on_csv([test_idx+1, n_kernels_current_GMM, threshold_current_clustering, num_relevant_config, current_error],
         #                            out_df_scores, path_results_csv)
@@ -120,9 +138,13 @@ if __name__ == '__main__':
         current_path_clusters_png = path_gmm_means + "gmm_clusters_test_" + str(test_idx) + ".png"
         save_GMM_mean_info(preliminary_clustering.gmm.means, selected_lndks_idx, current_path_gmm_means_csv, current_path_clusters_png)
 
-    mean_error = sum(errors) / n_test
-    mean_error = round(mean_error, 3)
-    print("Total Mean Absolute Error: " + str(mean_error))
+    mean_base_error = sum(base_errors_list)/ n_test
+    mean_best_error = sum(best_errors_list)/ n_test
+    print("Total Mean Base Absolute Error: " + str(mean_base_error))
+    print("Total Mean Best Absolute Error: " + str(mean_best_error))
+    #mean_error = sum(errors) / n_test
+    #mean_error = round(mean_error, 3)
+    #print("Total Mean Absolute Error: " + str(mean_error))
 
     path_errors = path_results + "graphics_errors.png"
     path_conf_matrix = path_results + "confusion_matrix.png"

@@ -24,7 +24,9 @@ n_jobs = 4  # Number of threads to use to perform SVR training
 cross_val_protocol = "5-fold-cross-validation"
 """cross_val_protocol:  'Leave-One-Subject-Out' or '5-fold-cross-validation' or 'Leave-One-Sequence-Out'"""
 
-
+# Type of train protocol
+train_type = "randomized_train"
+"""train_type:  'normal_train' or 'grid_train' or 'randomized_train'"""
 
 # PARAMETERS USED BY THE SCRIPT generate_model_predictor.py
 
