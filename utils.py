@@ -49,8 +49,6 @@ def get_training_and_test_idx(num_videos, cross_val_protocol, seq_df_path):
             get_training_idx = np.delete(np.arange(0, num_videos), idxs_test)
             random.shuffle(get_training_idx)
             all_training_idx.append(get_training_idx)
-            #print("test: ",all_test_idx)
-            #print("train: ",all_training_idx)
     elif cross_val_protocol == "5-fold-cross-validation":
         for subjects_test_offset in np.arange(0, num_subject, 5):
             idxs_test = []
@@ -66,8 +64,6 @@ def get_training_and_test_idx(num_videos, cross_val_protocol, seq_df_path):
             get_training_idx = np.delete(np.arange(0, num_videos), idxs_test)
             random.shuffle(get_training_idx)
             all_training_idx.append(get_training_idx)
-            #print("test: ",all_test_idx)
-            #print("train: ",all_training_idx)
     elif cross_val_protocol == "Leave-One-Sequence-Out":
         for video_idx in np.arange(0, num_videos):
             all_test_idx.append(np.asarray([video_idx]))

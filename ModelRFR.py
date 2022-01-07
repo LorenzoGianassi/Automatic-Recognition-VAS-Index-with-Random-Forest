@@ -1,5 +1,6 @@
 from os import error
 import pandas as pd
+import time
 import pickle
 import numpy as np
 from pprint import pprint
@@ -89,8 +90,8 @@ class ModelRFR:
 
         training_set_histo = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.train_video_idx])
         training_set_vas = np.asarray([self.vas_sequences[i] for i in self.train_video_idx])
-        model_rfr = RandomForestRegressor(n_estimators=2, max_depth=None, max_features="auto")
-
+        model_rfr = RandomForestRegressor(n_estimators= 800, min_samples_split = 10, min_samples_leaf = 2, max_features = 'sqrt', max_depth = 110, criterion = 'squared_error', bootstrap = False)
+        self.model = model_rfr.fit(training_set_histo, training_set_vas)
         return model_rfr.fit(training_set_histo, training_set_vas)
 
 
@@ -108,6 +109,8 @@ class ModelRFR:
         n_estimators = [int(x) for x in np.linspace(start = 200, stop = 2000, num = 10)]
         # Number of features to consider at every split
         max_features = ['auto', 'sqrt']
+        # Criterion
+        criterion = ["squared_error", "absolute_error", "poisson"]
         # Maximum number of levels in tree
         max_depth = [int(x) for x in np.linspace(10, 110, num = 11)]
         max_depth.append(None)
@@ -117,21 +120,19 @@ class ModelRFR:
         min_samples_leaf = [1, 2, 4]
         # Method of selecting samples for training each tree
         bootstrap = [True, False]
-        # Method of finidng maximum vote score for every observation
-        oob_score = [True,False]
 
         # Create the random grid
         random_grid = {'n_estimators': n_estimators,
+                    'criterion': criterion,
                     'max_features': max_features,
                     'max_depth': max_depth,
                     'min_samples_split': min_samples_split,
                     'min_samples_leaf': min_samples_leaf,
-                    'bootstrap': bootstrap,
-                    'oob_score': oob_score}
+                    'bootstrap': bootstrap}
 
         random_forest_randomized = RandomizedSearchCV(estimator=random_forest, param_distributions=random_grid,
-                              n_iter = 2, scoring='neg_mean_absolute_error', 
-                              cv = 4, verbose=1, random_state=42, n_jobs=-1,
+                              n_iter = 20, scoring='neg_mean_absolute_error', 
+                              cv = 2, verbose=1, random_state=42, n_jobs=-1,
                               return_train_score=True)
         
 
@@ -139,35 +140,6 @@ class ModelRFR:
         print("best param", random_forest_randomized.best_params_)
         #print("cv", random_forest_randomized.cv_results_)
         self.random_model = random_forest_randomized
-
-    def __train_grid(self):
-        """
-        Train RFT using fisher vectors calculated and vas indexes readed of the sequences.
-        Return the trained classifier
-        """
-        training_set_histo = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.train_video_idx])
-        training_set_vas = np.asarray([self.vas_sequences[i] for i in self.train_video_idx])
-        random_forest = RandomForestRegressor(random_state = 42)
-
-        # Create the parameter grid based on the results of random search 
-        param_grid = {
-            'bootstrap': [False],
-            'max_depth': [50, 60, 70, 80],
-            'max_features': [2, 3],
-            'min_samples_leaf': [3, 4, 5],
-            'min_samples_split': [2, 4, 6, 8],
-            'n_estimators': [500, 550, 600, 650,700]
-        }
-
-        # Instantiate the grid search model
-        grid_search = GridSearchCV(estimator = random_forest, param_grid = param_grid, 
-                                cv = 2, n_jobs = -1, verbose = 1, return_train_score=True)
-        
-       
-
-        grid_search.fit(training_set_histo, training_set_vas)
-        print("grid best", grid_search.best_params_)
-        self.grid_model = grid_search
 
 
     def __print(self,model_rfr):
@@ -193,14 +165,12 @@ class ModelRFR:
         # if train_by_max_score == True:
         #     self.model = self.__train_maximizing_score(n_jobs=n_jobs)
         if config.train_type == "normal_train":
+            start_time = time.time()
             self.__train()
+            print("--- RRF time: %s seconds ---" % (time.time() - start_time))
         elif config.train_type == "randomized_train":
             self.__train_randomized()
             self.compare_random()
-            #self.__print(self.random_model.best_estimator_)
-            #self.__train_grid()
-            #self.compare_grid()
-            #self.print_tree()
         elif config.train_type == "grid_train":
             self.__train_grid()
             self.compare_random()
@@ -211,7 +181,7 @@ class ModelRFR:
     
 
     
-    def evaluate(self, model, test_features, test_labels):
+    def evaluate_random(self, model, test_features, test_labels):
 
         predictions = model.predict(test_features)
         #print("prediction", predictions)
@@ -243,26 +213,18 @@ class ModelRFR:
         base_model.fit(train_set_desc, train_set_vas)
         
         print("--Base model Random--")
-        base_error = self.evaluate(base_model, test_set_desc, test_set_vas)
+        base_error = self.evaluate_random(base_model, test_set_desc, test_set_vas)
         print("Fold error", base_error)
 
         best_random = self.random_model.best_estimator_
         print("--Best model Random--")
-        best_error = self.evaluate(best_random, test_set_desc, test_set_vas)
+        best_error = self.evaluate_random(best_random, test_set_desc, test_set_vas)
         print("Fold error Random", best_error)
 
         #print('Improvement of {:0.2f}%.'.format( 100 * (random_accuracy - base_accuracy) / base_accuracy))
         
         return base_error, best_error
     
-    def compare_grid(self):
-        test_set_desc = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.test_video_idx])
-        test_set_vas = np.asarray([self.vas_sequences[i] for i in self.test_video_idx])
-        print("--Best model Grid--")
-        best_grid = self.grid_model.best_estimator_
-        best_error_grid = self.evaluate(best_grid, test_set_desc, test_set_vas)
-        print("Fold error Grid", best_error_grid)
-
 
     def __calculate_sample_weights(self):
         vas_occ = {}
@@ -283,15 +245,8 @@ class ModelRFR:
     def evaluate_performance(self, path_scores_parameters=None, path_scores_cm=None):
         test_set_desc = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.test_video_idx])
         test_set_vas = np.asarray([self.vas_sequences[i] for i in self.test_video_idx])
-        train_set_desc = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.train_video_idx])
-        train_set_vas = np.asarray([self.vas_sequences[i] for  i in self.train_video_idx])
-        self.compare_random()
         num_test_videos = test_set_desc.shape[0]
-        num_train_videos = train_set_desc.shape[0]
-        print("num_test_videos", num_test_videos)
-        print("num_train_videos", num_train_videos)
         sum_error = 0
-        sum_error_train = 0
         confusion_matrix = np.zeros(shape=(11, 11))
         real__vas = []
         predicted__vas = []
@@ -303,6 +258,7 @@ class ModelRFR:
             vas_predicted = self.__predict(test_set_desc[num_video].reshape(1,-1))
             predicted__vas.append(vas_predicted)
             error = abs(real_vas-vas_predicted)
+            print("Mean Error: ", error)
             sum_error += error
             if path_scores_parameters is not None:
                 data = np.hstack(
@@ -310,36 +266,16 @@ class ModelRFR:
                 out_df_scores = out_df_scores.append(pd.Series(data.reshape(-1), index=out_df_scores.columns),
                                                      ignore_index=True)
             confusion_matrix[real_vas][vas_predicted] += 1
-        for num_video in np.arange(num_train_videos):
-            real_vas = train_set_vas[num_video]
-            real__vas.append(real_vas)
-            vas_predicted = self.__predict(train_set_desc[num_video].reshape(1,-1))
-            predicted__vas.append(vas_predicted)
-            error = abs(real_vas-vas_predicted)
-            sum_error_train += error
-        
         if path_scores_parameters is not None:
             out_df_scores.to_csv(path_scores_parameters, index=False, header=True)
         if path_scores_cm is not None:
             plot_matrix(cm=confusion_matrix, labels=np.arange(0, 11), normalize=True, fname=path_scores_cm)
-        
-        predictions = self.model.predict(test_set_desc)
-        print("prediction", predictions)
-        errors = abs(predictions - test_set_vas)
-        print("errors", errors)
-        mape = 100 * np.mean(errors / test_set_vas)
-        print("mape", mape)
-        accuracy = 100 - mape
-        print('Model Performance')
-        print('Average Error: {:0.4f}.'.format(np.mean(errors)))
-        print('Accuracy = {:0.2f}%.'.format(accuracy))
         mean_error = round(sum_error / num_test_videos, 3)
-        mean_error_train = round(sum_error_train / num_train_videos, 3)
-
         return mean_error, confusion_matrix
 
     def __predict(self, sequence_descriptor):
         vas_predicted = self.model.predict(sequence_descriptor)[0]  
+        #vas_predicted = self.random_model.predict(sequence_descriptor)[0]  
         if vas_predicted < 0:
             vas_predicted = 0
         elif vas_predicted > 10:
