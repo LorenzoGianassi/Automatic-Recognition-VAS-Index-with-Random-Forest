@@ -80,6 +80,25 @@ class ModelRFR:
         for num_video in np.arange(len(self.desc_relevant_config_videos)):
             vas_sequences.append(seq_df.iloc[num_video][1])
         return vas_sequences
+    
+    
+
+    def train_RFR(self, model_dump_path=None, n_jobs=1, train_by_max_score=True):
+        """
+        Performs the model training procedure based on what was done in the preliminary clustering phase
+        """
+        np.seterr(divide='ignore', invalid='ignore')
+        self.desc_relevant_config_videos = self.__generate_descriptors_relevant_configuration()
+        self.vas_sequences = self.__read_vas_videos()
+        if self.weighted_samples:
+            self.__calculate_sample_weights()
+        if train_by_max_score == True:
+            self.model = self.__train_maximizing_score(n_jobs=n_jobs)
+        else:
+            self.model = self.__train()
+        if model_dump_path is not None:
+            self.__dump_on_pickle(model_dump_path)
+
 
     
     def __train(self):
@@ -92,15 +111,13 @@ class ModelRFR:
         training_set_vas = np.asarray([self.vas_sequences[i] for i in self.train_video_idx])
         model_rfr = RandomForestRegressor(n_estimators= 1100, min_samples_split = 10, min_samples_leaf = 2, max_features = 'sqrt', max_depth = 110, criterion = 'squared_error', bootstrap = False)
         self.model = model_rfr.fit(training_set_histo, training_set_vas)
-        return model_rfr.fit(training_set_histo, training_set_vas)
+        return self.model
 
 
-    def __train_randomized(self):
-        """
-        Train RFT using fisher vectors calculated and vas indexes readed of the sequences.
-        Return the trained classifier
-        """
-        training_set_histo = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.train_video_idx])
+    def __train_maximizing_score(self, n_jobs):
+        if self.verbose:
+            print("---- Find parameters that minimizes mean absolute error... ----")
+        training_set_desc = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.train_video_idx])
         training_set_vas = np.asarray([self.vas_sequences[i] for i in self.train_video_idx])
         random_forest = RandomForestRegressor(random_state = 42)
 
@@ -129,18 +146,16 @@ class ModelRFR:
                     'min_samples_split': min_samples_split,
                     'min_samples_leaf': min_samples_leaf,
                     'bootstrap': bootstrap}
-
         random_forest_randomized = RandomizedSearchCV(estimator=random_forest, param_distributions=random_grid,
-                              n_iter = 20, scoring='neg_mean_absolute_error', 
-                              cv = 2, verbose=1, random_state=42, n_jobs=-1,
-                              return_train_score=True)
-        
-
-        random_forest_randomized.fit(training_set_histo, training_set_vas)
-        print("best param", random_forest_randomized.best_params_)
-        #print("cv", random_forest_randomized.cv_results_)
-        self.random_model = random_forest_randomized
-
+                                n_iter = 200, scoring='neg_mean_absolute_error', 
+                                cv = 2, verbose=1, random_state=42, n_jobs=-1,
+                                return_train_score=True).fit(training_set_desc, training_set_vas, sample_weight=self.sample_weights)
+        best_params = random_forest_randomized.best_params_
+        print("--- Best Params ---\n", best_params)
+        return RandomForestRegressor(n_estimators= best_params['n_estimators'], min_samples_split = best_params['min_samples_split'], min_samples_leaf = best_params['min_samples_leaf'],
+                                        max_features = best_params['max_features'], max_depth = best_params['max_depth'], criterion = best_params['criterion'], bootstrap = best_params['bootstrap'])\
+                                            .fit(training_set_desc, training_set_vas, sample_weight=self.sample_weights)
+  
 
     def __print(self,model_rfr):
         for i in np.arange(len(model_rfr.estimators_)):
@@ -152,79 +167,6 @@ class ModelRFR:
                     rounded=True)
             figure.savefig('tree' + str(i) + '.png')
 
-
-    def train_RFR(self, model_dump_path=None, n_jobs=1):
-        """
-        Performs the model training procedure based on what was done in the preliminary clustering phase
-        """
-        np.seterr(divide='ignore', invalid='ignore')
-        self.desc_relevant_config_videos = self.__generate_descriptors_relevant_configuration()
-        self.vas_sequences = self.__read_vas_videos()
-        if self.weighted_samples:
-            self.__calculate_sample_weights()
-        # if train_by_max_score == True:
-        #     self.model = self.__train_maximizing_score(n_jobs=n_jobs)
-        if config.train_type == "normal_train":
-            start_time = time.time()
-            self.__train()
-            print("--- RRF time: %s seconds ---" % (time.time() - start_time))
-        elif config.train_type == "randomized_train":
-            self.__train_randomized()
-            self.compare_random()
-        elif config.train_type == "grid_train":
-            self.__train_grid()
-            self.compare_random()
-        #self.__print(self.model)
-        # if model_dump_path is not None:
-        #     self.__dump_on_pickle(model_dump_path)
-    
-    
-
-    
-    def evaluate_random(self, model, test_features, test_labels):
-
-        predictions = model.predict(test_features)
-        #print("prediction", predictions)
-        errors = abs(predictions - test_labels)
-        #print("test label", test_labels)
-        mape = 100 * np.mean((errors / test_labels))
-        np.seterr(divide='ignore', invalid='ignore')
-        mean_errors = np.mean(errors)
-        print("Explain variance score =", round(sm.explained_variance_score(test_labels, predictions), 2)) 
-        print("R2 score =", round(sm.r2_score(test_labels, predictions), 2))
-        print('Average Error: {:0.4f}.'.format(mean_errors))
-        print("MAE:", mean_absolute_error(test_labels,predictions))
-        print("MSQE:", mean_squared_error(test_labels,predictions))
-        
-        return mean_errors
-      
-
-    def mean_absolute_scaled_error(self,y_true, y_pred, y_train):
-        e_t = y_true - y_pred
-        scale = mean_absolute_error(y_train[1:], y_train[:-1])
-        return np.mean(np.abs(e_t / scale))
-
-    def compare_random(self):
-        base_model = RandomForestRegressor(random_state = 42)
-        test_set_desc = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.test_video_idx])
-        test_set_vas = np.asarray([self.vas_sequences[i] for i in self.test_video_idx])
-        train_set_desc = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.train_video_idx])
-        train_set_vas = np.asarray([self.vas_sequences[i] for  i in self.train_video_idx])
-        base_model.fit(train_set_desc, train_set_vas)
-        
-        print("--Base model Random--")
-        base_error = self.evaluate_random(base_model, test_set_desc, test_set_vas)
-        print("Fold error", base_error)
-
-        best_random = self.random_model.best_estimator_
-        print("--Best model Random--")
-        best_error = self.evaluate_random(best_random, test_set_desc, test_set_vas)
-        print("Fold error Random", best_error)
-
-        #print('Improvement of {:0.2f}%.'.format( 100 * (random_accuracy - base_accuracy) / base_accuracy))
-        
-        return base_error, best_error
-    
 
     def __calculate_sample_weights(self):
         vas_occ = {}
@@ -270,12 +212,11 @@ class ModelRFR:
         if path_scores_cm is not None:
             plot_matrix(cm=confusion_matrix, labels=np.arange(0, 11), normalize=True, fname=path_scores_cm)
         mean_error = round(sum_error / num_test_videos, 3)
-        print("Mean Error: ", mean_error)
         return mean_error, confusion_matrix
+
 
     def __predict(self, sequence_descriptor):
         vas_predicted = self.model.predict(sequence_descriptor)[0]  
-        #vas_predicted = self.random_model.predict(sequence_descriptor)[0]  
         if vas_predicted < 0:
             vas_predicted = 0
         elif vas_predicted > 10:
