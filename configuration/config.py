@@ -14,7 +14,8 @@ covariance_type = "full"
 """covariance_type: 'diag' or 'full' """
 
 # Indexes of the landmarks to use for fitting GMM and description sequences
-selected_lndks_idx = [5, 11, 19, 24, 37, 41, 44, 46, 50, 52, 56, 58]
+#selected_lndks_idx = [5, 11, 19, 24, 37, 41, 44, 46, 50, 52, 56, 58]
+selected_lndks_idx = [5, 11, 19, 24, 30, 37, 41, 44, 46, 50, 52, 56, 58]
 #selected_lndks_idx = np.arange(66)
 
 n_jobs = 4  # Number of threads to use to perform SVR training
@@ -24,14 +25,14 @@ cross_val_protocol = "Leave-One-Subject-Out"
 """cross_val_protocol:  'Leave-One-Subject-Out' or '5-fold-cross-validation' or 'Leave-One-Sequence-Out'"""
 
 # Type of train protocol
-train_type = "normal_train"
+train_type = "randomized_train"
 """train_type:  'normal_train' or 'randomized_train'"""
 
 # PARAMETERS USED BY THE SCRIPT generate_model_predictor.py
 
 # Threshold of the neutral configurations (if fit_by_bic = True set a list of thresholds of the same length defined
 # in the n_kernels_GMM list, otherwise set a float value between 0 and 1)
-threshold_neutral = 0.45
+threshold_neutral = 0.25
 """ For example if the threshold is 0.3: all those configurations that occur within the sequences with vas equal to 0 
  with a frequency greater than 0.3 will be considered neutral. """
 
@@ -48,4 +49,4 @@ weighted_samples = True
 # PARAMETERS USED BY THE SCRIPT test.py
 
 # Thresholds to test
-thresholds_neutral_to_test = np.arange(0.1, 0.8, 0.05)
+thresholds_neutral_to_test = np.arange(0.2, 0.5, 0.02)

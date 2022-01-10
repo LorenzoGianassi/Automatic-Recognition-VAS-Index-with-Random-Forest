@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from ModelRFR import ModelRFR
+import time
 
 from PreliminaryClustering import PreliminaryClustering
 from configuration import config
@@ -184,6 +185,7 @@ def compare_performance_different_thresholds_by_BIC():
 
 if __name__ == '__main__':
     dir_paths = [path_result]
+    start_time = time.time()
     if not fit_by_bic:
         dir_paths.append(path_cm)
     file_paths = [coord_df_path, seq_df_path]
@@ -199,3 +201,4 @@ if __name__ == '__main__':
             covariance_type+" covariance and "+cross_val_protocol+")")
         compare_performance_with_different_thresholds()
         print("End test with n_kernels= " + str(n_kernels_GMM) + ": results saved in a csv file with path '"+path_result+"'")
+        print("--- OPERAZIONE time: %s seconds ---" % (time.time() - start_time))

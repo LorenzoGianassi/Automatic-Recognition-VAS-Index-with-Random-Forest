@@ -90,7 +90,7 @@ class ModelRFR:
 
         training_set_histo = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.train_video_idx])
         training_set_vas = np.asarray([self.vas_sequences[i] for i in self.train_video_idx])
-        model_rfr = RandomForestRegressor(n_estimators= 800, min_samples_split = 10, min_samples_leaf = 2, max_features = 'sqrt', max_depth = 110, criterion = 'squared_error', bootstrap = False)
+        model_rfr = RandomForestRegressor(n_estimators= 1100, min_samples_split = 10, min_samples_leaf = 2, max_features = 'sqrt', max_depth = 110, criterion = 'squared_error', bootstrap = False)
         self.model = model_rfr.fit(training_set_histo, training_set_vas)
         return model_rfr.fit(training_set_histo, training_set_vas)
 
@@ -258,7 +258,6 @@ class ModelRFR:
             vas_predicted = self.__predict(test_set_desc[num_video].reshape(1,-1))
             predicted__vas.append(vas_predicted)
             error = abs(real_vas-vas_predicted)
-            print("Mean Error: ", error)
             sum_error += error
             if path_scores_parameters is not None:
                 data = np.hstack(
@@ -271,6 +270,7 @@ class ModelRFR:
         if path_scores_cm is not None:
             plot_matrix(cm=confusion_matrix, labels=np.arange(0, 11), normalize=True, fname=path_scores_cm)
         mean_error = round(sum_error / num_test_videos, 3)
+        print("Mean Error: ", mean_error)
         return mean_error, confusion_matrix
 
     def __predict(self, sequence_descriptor):
