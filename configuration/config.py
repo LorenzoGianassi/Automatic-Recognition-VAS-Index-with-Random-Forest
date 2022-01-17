@@ -42,10 +42,10 @@ all_selected_lndks_idx = [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30
                       41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
                       65]
 
-n_jobs = 4  # Number of threads to use to perform SVR training
+n_jobs = 8  # Number of threads to use to perform SVR training
 
 # Type of protocol to be used to evaluate the performance of the models
-cross_val_protocol = "Leave-One-Subject-Out"
+cross_val_protocol = "5-fold-cross-validation"
 """cross_val_protocol:  'Leave-One-Subject-Out' or '5-fold-cross-validation' or 'Leave-One-Sequence-Out'"""
 
 
@@ -70,4 +70,4 @@ weighted_samples = True
 # PARAMETERS USED BY THE SCRIPT test.py
 
 # Thresholds to test
-thresholds_neutral_to_test = np.arange(0.2, 0.5, 0.02)
+thresholds_neutral_to_test = np.arange(0.1, 0.5, 0.05)

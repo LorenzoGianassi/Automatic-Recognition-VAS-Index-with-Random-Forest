@@ -20,7 +20,7 @@ seq_df_path = "data/dataset/2d_skeletal_data_unbc_sequence.csv"
 num_lndks = 66
 weighted_samples = config.weighted_samples
 # Features info
-selected_lndks_idx = config.selected_lndks_idx
+selected_lndks_idx = config.improved_selected_lndks_idx
 num_videos = 200
 cross_val_protocol = config.cross_val_protocol
 train_video_idx, test_video_idx = get_training_and_test_idx(num_videos, cross_val_protocol, seq_df_path)

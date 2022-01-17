@@ -23,6 +23,7 @@ from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_percentage_error
 from configuration import config
 import pydot
+from hyperopt import hp, tpe, fmin, Trials, STATUS_OK
 
 class ModelRFR:
     """Class that deals with training a Random Forest starting from the relevant configurations
@@ -37,6 +38,12 @@ class ModelRFR:
         self.means_gmm = self.preliminary_clustering.gmm.means  # center of the GMM clusters
         self.desc_relevant_config_videos = None  # descriptor of the sequences contained in the dataset
         self.model = None  # RFR model
+        self.space = {
+            "n_estimators": hp.choice("n_estimators", [100, 200, 300, 400, 500, 600, 2000]),
+            'max_depth': hp.choice('max_depth', range(1,20)),
+            'min_samples_split' : hp.choice("min_samples_split", range(5,15)),
+            'max_features': hp.choice('max_features', range(1,5)),
+        }
         self.verbose = verbose # define if the output must be printed in the class
         self.weighted_samples = weighted_samples  # define if the samples must be weighted for the model fitting
         self.sample_weights = None  # sample weights (populated only if weighted_samples=True)
@@ -81,6 +88,41 @@ class ModelRFR:
             vas_sequences.append(seq_df.iloc[num_video][1])
         return vas_sequences
     
+
+       #Define Objective Function
+    def objective(self, params):
+        training_set_histo = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.train_video_idx])
+        training_set_vas = np.asarray([self.vas_sequences[i] for i in self.train_video_idx])
+        
+        rf = RandomForestRegressor(**params)
+        
+        # fit Training model
+        rf.fit(training_set_histo, training_set_vas)
+        
+        # Making predictions and find RMSE
+        y_pred = rf.predict(training_set_histo)
+        mse = mean_absolute_error(training_set_vas,y_pred)
+        
+    
+        # Return RMSE
+        return mse
+
+
+    def _trials(self):
+        #Create Hyperparameter space
+     
+
+        trials = Trials()
+        best = fmin(self.objective,
+            space=self.space,
+            algo=tpe.suggest,
+            max_evals=2,
+            trials=trials)
+
+        print("BEESTTTT", best)
+        print("TRAILS RESULT", trials.results)
+    
+    
     
 
     def train_RFR(self, model_dump_path=None, n_jobs=1, train_by_max_score=True):
@@ -94,12 +136,13 @@ class ModelRFR:
             self.__calculate_sample_weights()
         if train_by_max_score == True:
             self.model = self.__train_maximizing_score(n_jobs=n_jobs)
+            self._trials()
         else:
             self.model = self.__train()
         if model_dump_path is not None:
             self.__dump_on_pickle(model_dump_path)
 
-
+           
     
     def __train(self):
         """
@@ -109,7 +152,7 @@ class ModelRFR:
 
         training_set_histo = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.train_video_idx])
         training_set_vas = np.asarray([self.vas_sequences[i] for i in self.train_video_idx])
-        model_rfr = RandomForestRegressor(n_estimators= 1100, min_samples_split = 10, min_samples_leaf = 2, max_features = 'sqrt', max_depth = 110, criterion = 'squared_error', bootstrap = False)
+        model_rfr = RandomForestRegressor(n_estimators= 100, min_samples_split = 10, min_samples_leaf = 2, max_features = 'sqrt', max_depth = 110, criterion = 'squared_error', bootstrap = False)
         self.model = model_rfr.fit(training_set_histo, training_set_vas)
         return self.model
 
@@ -119,7 +162,7 @@ class ModelRFR:
             print("---- Find parameters that minimizes mean absolute error... ----")
         training_set_desc = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.train_video_idx])
         training_set_vas = np.asarray([self.vas_sequences[i] for i in self.train_video_idx])
-        random_forest = RandomForestRegressor(random_state = 42)
+        random_forest = RandomForestRegressor()
 
         # Grid creation
         # Number of trees in random forest
@@ -147,14 +190,27 @@ class ModelRFR:
                     'min_samples_leaf': min_samples_leaf,
                     'bootstrap': bootstrap}
         random_forest_randomized = RandomizedSearchCV(estimator=random_forest, param_distributions=random_grid,
-                                n_iter = 200, scoring='neg_mean_absolute_error', 
-                                cv = 2, verbose=1, random_state=42, n_jobs=-1,
+                                n_iter = 10, scoring='neg_mean_absolute_error', 
+                                cv = None, verbose=1, random_state=None, n_jobs=-1,
                                 return_train_score=True).fit(training_set_desc, training_set_vas, sample_weight=self.sample_weights)
         best_params = random_forest_randomized.best_params_
         print("--- Best Params ---\n", best_params)
+        #random_forest_regressor = RandomForestRegressor(n_estimators= best_params['n_estimators'], min_samples_split = best_params['min_samples_split'], min_samples_leaf = best_params['min_samples_leaf'],
+        #                                max_features = best_params['max_features'], max_depth = best_params['max_depth'], criterion = best_params['criterion'], bootstrap = best_params['bootstrap'])
+        #param_grid = {'bootstrap': [True],
+        #              'max_depth': [80, 90, 100, 110],
+        #              'max_features': [2, 3],
+        #              'min_samples_leaf': [3, 4, 5],
+        #              'min_samples_split': [8, 10, 12],
+        #              'n_estimators': [100, 200, 300, 1000]
+        #            }
+        #grid_search = GridSearchCV(estimator = random_forest_regressor.fit(training_set_desc, training_set_vas, sample_weight=self.sample_weights), param_grid = param_grid, 
+        #                  cv = 5, n_jobs = -1, verbose = 1).fit(training_set_desc, training_set_vas, sample_weight=self.sample_weights)
+        #best_params = grid_search.best_params_
         return RandomForestRegressor(n_estimators= best_params['n_estimators'], min_samples_split = best_params['min_samples_split'], min_samples_leaf = best_params['min_samples_leaf'],
                                         max_features = best_params['max_features'], max_depth = best_params['max_depth'], criterion = best_params['criterion'], bootstrap = best_params['bootstrap'])\
                                             .fit(training_set_desc, training_set_vas, sample_weight=self.sample_weights)
+        
   
 
     def __print(self,model_rfr):
@@ -188,8 +244,13 @@ class ModelRFR:
         test_set_desc = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.test_video_idx])
         test_set_vas = np.asarray([self.vas_sequences[i] for i in self.test_video_idx])
         num_test_videos = test_set_desc.shape[0]
-        sum_error = 0
-        confusion_matrix = np.zeros(shape=(11, 11))
+        train_set_desc = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.train_video_idx])
+        train_set_vas = np.asarray([self.vas_sequences[i] for i in self.train_video_idx])
+        num_train_videos = train_set_desc.shape[0]
+        sum_test_error = 0
+        sum_train_error = 0
+        test_confusion_matrix = np.zeros(shape=(11, 11))
+        train_confusion_matrix = np.zeros(shape=(11, 11))
         real__vas = []
         predicted__vas = []
         if path_scores_parameters is not None:
@@ -199,20 +260,35 @@ class ModelRFR:
             real__vas.append(real_vas)
             vas_predicted = self.__predict(test_set_desc[num_video].reshape(1,-1))
             predicted__vas.append(vas_predicted)
-            error = abs(real_vas-vas_predicted)
-            sum_error += error
+            test_error = abs(real_vas-vas_predicted)
+            sum_test_error += test_error
             if path_scores_parameters is not None:
                 data = np.hstack(
-                    (np.array([self.test_video_idx[num_video], real_vas, vas_predicted, error]).reshape(1, -1)))
+                    (np.array([self.test_video_idx[num_video], real_vas, vas_predicted, test_error]).reshape(1, -1)))
                 out_df_scores = out_df_scores.append(pd.Series(data.reshape(-1), index=out_df_scores.columns),
                                                      ignore_index=True)
-            confusion_matrix[real_vas][vas_predicted] += 1
+            test_confusion_matrix[real_vas][vas_predicted] += 1
+        for num_video in np.arange(num_train_videos):
+            real_vas = train_set_vas[num_video]
+            real__vas.append(real_vas)
+            vas_predicted = self.__predict(train_set_desc[num_video].reshape(1,-1))
+            predicted__vas.append(vas_predicted)
+            train_error = abs(real_vas-vas_predicted)
+            sum_train_error += train_error
+            if path_scores_parameters is not None:
+                data = np.hstack(
+                    (np.array([self.train_video_idx[num_video], real_vas, vas_predicted, train_error]).reshape(1, -1)))
+                out_df_scores = out_df_scores.append(pd.Series(data.reshape(-1), index=out_df_scores.columns),
+                                                     ignore_index=True)
+            train_confusion_matrix[real_vas][vas_predicted] += 1
         if path_scores_parameters is not None:
             out_df_scores.to_csv(path_scores_parameters, index=False, header=True)
         if path_scores_cm is not None:
-            plot_matrix(cm=confusion_matrix, labels=np.arange(0, 11), normalize=True, fname=path_scores_cm)
-        mean_error = round(sum_error / num_test_videos, 3)
-        return mean_error, confusion_matrix
+            plot_matrix(cm=test_confusion_matrix, labels=np.arange(0, 11), normalize=True, fname=path_scores_cm)
+            plot_matrix(cm=train_confusion_matrix, labels=np.arange(0, 11), normalize=True, fname=path_scores_cm)
+        mean_test_error = round(sum_test_error / num_test_videos, 3)
+        mean_train_error = round(sum_train_error / num_train_videos, 3)
+        return mean_test_error, mean_train_error,test_confusion_matrix, train_confusion_matrix
 
 
     def __predict(self, sequence_descriptor):

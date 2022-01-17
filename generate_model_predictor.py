@@ -57,11 +57,14 @@ if __name__ == '__main__':
     check_existing_paths(dir_paths=dir_paths, file_paths=file_paths)
     out_df_scores = pd.DataFrame(columns=['Round', 'N kernels GMM', 'Threshold', 'Relevant Clusters', 'Mean Absolute Error'])
     n_test = len(train_video_idx)
-    errors = []
+    test_errors = []
+    train_errors = []
     base_errors_list = []
     best_errors_list = []
-    confusion_matrix = np.zeros(shape=(11, 11))
-    confusion_matrix_pain_levels = np.zeros(shape=(3, 3))
+    confusion_test_matrix = np.zeros(shape=(11, 11))
+    confusion_train_matrix = np.zeros(shape=(11, 11))
+    confusion_matrix_test_pain_levels = np.zeros(shape=(3, 3))
+    confusion_matrix_train_pain_levels = np.zeros(shape=(3, 3))
     if fit_by_bic:
         print("Generate and test models with fitting GMM by BIC using "+str(n_kernels_GMM)+" kernels, "+covariance_type+" covariance and "+cross_val_protocol )
     else:
@@ -105,12 +108,16 @@ if __name__ == '__main__':
             print("-- Calculate scores for trained SVR... --")
             current_test_path_error = path_errors+"errors_test_"+str(test_idx)+".csv"
             current_path_cm = path_confusion_matrices + "conf_matrix_test_" + str(test_idx) + ".png"
-            current_error, current_confusion_matrix = model_rfr.evaluate_performance(path_scores_parameters=current_test_path_error,path_scores_cm=current_path_cm)
+            current_test_error, current_train_error, current_test_confusion_matrix, current_train_confusion_matrix = model_rfr.evaluate_performance(path_scores_parameters=current_test_path_error,path_scores_cm=current_path_cm)
             current_cm_pain_level = model_rfr.evaluate_performance_on_scaled_pain()
-            errors.append(current_error)
-            print("-- Mean Absolute Error: " + str(current_error)+" --")
-            confusion_matrix += current_confusion_matrix
-            confusion_matrix_pain_levels += current_cm_pain_level
+            test_errors.append(current_test_error)
+            train_errors.append(current_train_error)
+            print("-- Mean Absolute Test Error: " + str(current_test_error)+" --")
+            confusion_test_matrix += current_test_confusion_matrix
+            confusion_matrix_test_pain_levels += current_cm_pain_level
+            print("-- Mean Absolute Train Error: " + str(current_train_error)+" --")
+            confusion_train_matrix += current_train_confusion_matrix
+            confusion_matrix_train_pain_levels += current_cm_pain_level
 
         #out_df_scores = save_data_on_csv([test_idx+1, n_kernels_current_GMM, threshold_current_clustering, num_relevant_config, current_error],
         #                            out_df_scores, path_results_csv)
@@ -118,22 +125,34 @@ if __name__ == '__main__':
         current_path_clusters_png = path_gmm_means + "gmm_clusters_test_" + str(test_idx) + ".png"
         save_GMM_mean_info(preliminary_clustering.gmm.means, selected_lndks_idx, current_path_gmm_means_csv, current_path_clusters_png)
 
+    
+    mean_test_error = sum(test_errors) / n_test
+    mean__test_error = round(mean_test_error, 3)
+    print("Total Mean Absolute Test Error: " + str(mean_test_error))
 
-    mean_error = sum(errors) / n_test
-    mean_error = round(mean_error, 3)
-    print("Total Mean Absolute Error: " + str(mean_error))
+    mean_train_error = sum(train_errors) / n_test
+    mean_train_error = round(mean_train_error, 3)
+    print("Total Mean Absolute Train Error: " + str(mean_train_error))
 
     path_errors = path_results + "graphics_errors.png"
-    path_conf_matrix = path_results + "confusion_matrix.png"
-    path_conf_matrix_pain_levels = path_results + "confusion_matrix_pain_levels.png"
+    path_conf_test_matrix = path_results + "confusion_test_matrix.png"
+    path_conf_test_matrix_pain_levels = path_results + "confusion_test_matrix_pain_levels.png"
+    path_conf_train_matrix = path_results + "confusion_train_matrix.png"
+    path_conf_train_matrix_pain_levels = path_results + "confusion_train_matrix_pain_levels.png"
     print("Mean absolute errors detected at each round saved in a csv file on path '" + path_results_csv+"'")
     print("Confusion matrices detected at each round saved in png files on path '" + path_confusion_matrices+"'")
 
-    plot_matrix(cm=confusion_matrix, labels=np.arange(0, 11), normalize=True, fname=path_conf_matrix)
-    print("Overall confusion matrix saved in png files on path '" + path_conf_matrix+"'")
+    plot_matrix(cm=confusion_test_matrix, labels=np.arange(0, 11), normalize=True, fname=path_conf_test_matrix)
+    print("Overall confusion test matrix saved in png files on path '" + path_conf_test_matrix+"'")
     labels_cm = ["no pain", "weak pain", "severe pain"]
-    plot_matrix(cm=confusion_matrix_pain_levels, labels=labels_cm, normalize=True, fname=path_conf_matrix_pain_levels)
-    print("Overall confusion matrix on pain level saved in png files on path '" + path_conf_matrix_pain_levels + "'")
+    plot_matrix(cm=confusion_matrix_test_pain_levels, labels=labels_cm, normalize=True, fname=path_conf_test_matrix_pain_levels)
+    print("Overall confusion test matrix on pain level saved in png files on path '" + path_conf_test_matrix_pain_levels + "'")
+
+    plot_matrix(cm=confusion_train_matrix, labels=np.arange(0, 11), normalize=True, fname=path_conf_train_matrix)
+    print("Overall confusion train matrix saved in png files on path '" + path_conf_train_matrix+"'")
+    labels_cm = ["no pain", "weak pain", "severe pain"]
+    plot_matrix(cm=confusion_matrix_train_pain_levels, labels=labels_cm, normalize=True, fname=path_conf_train_matrix_pain_levels)
+    print("Overall confusion train matrix on pain level saved in png files on path '" + path_conf_train_matrix_pain_levels + "'")
 
     """
     plt.clf()
