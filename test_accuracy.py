@@ -93,7 +93,7 @@ def execute_train(selected_lndks_idx, n_kernels_GMM, threshold_VAS, description,
         else:
             print("Generate and test models with " + str(
                 n_kernels_GMM) + " kernels GMM, " + covariance_type + " covariance, threshold = " + str(
-                threshold_neutral) + " and using " + cross_val_protocol)
+                threshold_neutral) + " and using " + cross_val_protocol)            
         for test_idx in np.arange(0, n_test):
             print("- Round " + str(test_idx + 1) + "/" + str(n_test) + " -")
             test_videos = test_video_idx[test_idx]

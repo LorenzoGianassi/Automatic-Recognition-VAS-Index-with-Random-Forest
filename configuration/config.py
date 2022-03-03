@@ -1,7 +1,6 @@
 import numpy as np
 """ Configuration file """
 
-
 # PARAMETERS USED BY ALL SCRIPTS
 
 # Define if the GMM must be fitted minimized BIC from more than one kernels number
