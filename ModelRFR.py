@@ -190,7 +190,7 @@ class ModelRFR:
                     'min_samples_leaf': min_samples_leaf,
                     'bootstrap': bootstrap}
         random_forest_randomized = RandomizedSearchCV(estimator=random_forest, param_distributions=random_grid,
-                                n_iter = 10, scoring='neg_mean_absolute_error', 
+                                n_iter = 1, scoring='neg_mean_absolute_error', 
                                 cv = None, verbose=1, random_state=None, n_jobs=-1,
                                 return_train_score=True).fit(training_set_desc, training_set_vas, sample_weight=self.sample_weights)
         best_params = random_forest_randomized.best_params_

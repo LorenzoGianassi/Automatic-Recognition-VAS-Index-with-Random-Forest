@@ -87,6 +87,9 @@ def compare_performance_with_different_thresholds():
                                                                threshold_neutral=threshold,
                                                                fit_by_bic=fit_by_bic)
                 preliminary_clustering.execute_preliminary_clustering()
+                print("generate_and_test_model", generate_and_test_model(
+                        threshold_neutral_configurations=threshold, preliminary_clustering=preliminary_clustering,
+                        train_videos=train_videos, test_videos=test_videos))
                 if len(preliminary_clustering.index_relevant_configurations) > 0:
                     current_error, current_cm = generate_and_test_model(
                         threshold_neutral_configurations=threshold, preliminary_clustering=preliminary_clustering,

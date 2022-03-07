@@ -69,4 +69,4 @@ weighted_samples = True
 # PARAMETERS USED BY THE SCRIPT test.py
 
 # Thresholds to test
-thresholds_neutral_to_test = np.arange(0.1, 0.5, 0.05)
+thresholds_neutral_to_test = np.arange(0.1, 0.15, 0.05)
