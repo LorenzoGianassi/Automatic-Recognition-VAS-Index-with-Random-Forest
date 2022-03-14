@@ -13,7 +13,7 @@ import time
 
 from PreliminaryClustering import PreliminaryClustering
 from configuration import config
-from utils import get_training_and_test_idx, check_existing_paths, plot_matrix, save_data_on_csv, read_dict_from_csv, plot_graph
+from utils import get_training_and_test_idx, check_existing_paths, plot_matrix, save_data_on_csv, read_dict_from_csv, plot_graph, plot_all_graphs
 
 """Script that allows you to train an SVR using a given number of kernels for preliminary 
 clustering."""
@@ -35,7 +35,9 @@ selected_lndks_idx = [[30, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47],
                     58, 59, 60, 61, 62, 63, 64, 65],
                     [5, 11, 19, 24, 30, 37, 41, 44, 46, 50, 52, 56, 58]]
 
-path = ["eyes/","mouth/","mouth+eyes/","standard/"]            
+path = ["eyes/","mouth/","mouth+eyes/","standard/"]    
+
+all_graph_error_value = []
 
 num_videos = 200
 cross_val_protocol = config.cross_val_protocol
@@ -55,7 +57,7 @@ else:
 # Model classifier info and paths
 path_result = "data/test/" + sub_directory
 
-path_result_thresholds = path_result + "scores_thresholds.csv"
+
 n_jobs = config.n_jobs
 
 """The procedure is performed which involves performing preliminary clustering and subsequent generation 
@@ -80,6 +82,7 @@ Save the results in a csv file containing the comparison of the best scores foun
 def compare_performance_with_different_thresholds():
     out_df_scores = pd.DataFrame(columns=['Thresholds Neutral Configurations', '#clusters', 'Mean Absolute Error'])
     n_test_for_threshold = len(train_video_idx)
+    path_result_thresholds = dir_paths[0] + "scores_thresholds.csv"
     thresholds_results = read_dict_from_csv(path_result_thresholds, out_df_scores, ['relevant_config', 'error'])
 
     for threshold_idx in np.arange(0, len(thresholds_neutral_to_test)):
@@ -128,13 +131,18 @@ def compare_performance_with_different_thresholds():
                y=[thresholds_results[result]["error"] for result in thresholds_results],
                x_label="Threshold", y_label= "Mean Absolute Error",
                title="Mean Absolute Errors with "+str(n_kernels_GMM)+" kernels",
-               file_path=path_result + "errors_graph.png")
+               file_path=dir_paths[0] + "errors_graph.png")
 
     plot_graph(x=[threshold for threshold in thresholds_results.keys()],
                y=[thresholds_results[result]["relevant_config"] for result in thresholds_results],
                x_label="Threshold", y_label="Number of relevant configurations",
                title="Number of relevant configurations with "+str(n_kernels_GMM)+" kernels",
-               file_path=path_result + "relevant_config_graph.png")
+               file_path=dir_paths[0] + "relevant_config_graph.png")
+
+    all_graph_error_value.append([thresholds_results[result]["error"] for result in thresholds_results])
+ 
+ 
+
 
 def update_results_by_BIC(dict_results_kernels):
     for n_kernels in dict_results_kernels:
@@ -223,3 +231,13 @@ if __name__ == '__main__':
             compare_performance_with_different_thresholds()
             print("End test with n_kernels= " + str(n_kernels_GMM) + ": results saved in a csv file with path '"+path_result+"'")
             print("--- OPERAZIONE time: %s seconds ---" % (time.time() - start_time))
+
+    plot_all_graphs(x=[threshold for threshold in thresholds_neutral_to_test],
+                    y=[error for error in all_graph_error_value],
+                    x_label="Threshold", y_label= "Mean Absolute Error",
+                    name_labels=["eyes","mouth","mouth+eyes","standard"],    
+                    title="Mean Absolute Errors with "+str(n_kernels_GMM)+" kernels",
+                    file_path=path_result + "errors_graph.png")
+
+
+    

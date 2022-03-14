@@ -1,2 +1,4 @@
 Thresholds Neutral Configurations,#clusters,Mean Absolute Error
-0.1,7.4,2.655
+0.1,7.4,2.646
+0.15,8.8,2.407
+0.2,9.4,2.706

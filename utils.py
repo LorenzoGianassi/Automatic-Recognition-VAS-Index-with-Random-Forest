@@ -1,3 +1,4 @@
+from cProfile import label
 import csv
 import os
 import numpy as np
@@ -131,5 +132,15 @@ def plot_graph(x, y, x_label, y_label, title, file_path, color = 'blue'):
     plt.ylabel(y_label)
     plt.xlabel(x_label)
     plt.title(title)
+    plt.savefig(file_path)
+    plt.close()
+
+def plot_all_graphs(x, y, x_label, y_label, name_labels, title, file_path):
+    for i,label in zip(y, name_labels):
+        plt.plot(x, i, label = label)
+    plt.ylabel(y_label)
+    plt.xlabel(x_label)
+    plt.title(title)
+    plt.legend()
     plt.savefig(file_path)
     plt.close()
