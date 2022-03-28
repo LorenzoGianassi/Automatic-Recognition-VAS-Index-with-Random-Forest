@@ -17,7 +17,6 @@ covariance_type = "full"
 type_of_landmark = "improved"
 """type_of_landmark:  'improved' or 'original' or 'eyes_and_eyebrows' or 'eyes' or 'nose' or 'mouth' or 'all'"""
 
-#selected_lndks_idx = [5, 11, 19, 24, 37, 41, 44, 46, 50, 52, 56, 58]
 improved_selected_lndks_idx = [5, 11, 19, 24, 30, 37, 41, 44, 46, 50, 52, 56, 58]
 #selected_lndks_idx = np.arange(66)
 
@@ -65,8 +64,5 @@ save_histo_figures = False
 # Defines if the samples must be weighted for training
 weighted_samples = True
 
-
-# PARAMETERS USED BY THE SCRIPT test.py
-
 # Thresholds to test
-thresholds_neutral_to_test = np.arange(0.1, 0.25, 0.05)
+thresholds_neutral_to_test = np.arange(0.1, 0.5, 0.05)

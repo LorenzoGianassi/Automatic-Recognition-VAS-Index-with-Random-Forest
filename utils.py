@@ -136,6 +136,7 @@ def plot_graph(x, y, x_label, y_label, title, file_path, color = 'blue'):
     plt.close()
 
 def plot_all_graphs(x, y, x_label, y_label, name_labels, title, file_path):
+    plt.close()
     for i,label in zip(y, name_labels):
         plt.plot(x, i, label = label)
     plt.ylabel(y_label)
@@ -144,3 +145,15 @@ def plot_all_graphs(x, y, x_label, y_label, name_labels, title, file_path):
     plt.legend()
     plt.savefig(file_path)
     plt.close()
+
+def plot_error_graph(mean_error, errors, n_test, threshold_idx, path_errors):
+    plt.close()       
+    plt.bar(np.arange(1, n_test+1), errors, color="blue")
+    plt.axhline(y=mean_error, xmin=0, xmax=n_test+1, color="red", label='Mean Absolute Error: '+str(mean_error))
+    plt.ylabel("Average of the Mean Absolute Error")
+    plt.xlabel("Num round")
+    plt.title("Mean Absolute Errors")
+    plt.legend()
+    plt.savefig(path_errors + str(threshold_idx) + " mean_errors_graph.png")
+    plt.close()
+    print("Histogram of the mean absolute error detected saved in a png file on path '" + path_errors +"'")

@@ -3,6 +3,8 @@ import pandas as pd
 import time
 import pickle
 import numpy as np
+import random
+from random import randrange
 from pprint import pprint
 from scipy.sparse.construct import random
 from sklearn import metrics
@@ -18,7 +20,7 @@ from sklearn.experimental import enable_halving_search_cv
 from sklearn.model_selection import HalvingRandomSearchCV
 from sklearn.model_selection import RandomizedSearchCV
 from scipy.stats import randint
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_absolute_error, r2_score
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_percentage_error
 from configuration import config
@@ -91,41 +93,44 @@ class ModelRFR:
 
        #Define Objective Function
     def objective(self, params):
+        """
+        Return the Mean Absolute Error for Train Set
+        """
         training_set_histo = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.train_video_idx])
         training_set_vas = np.asarray([self.vas_sequences[i] for i in self.train_video_idx])
-        
+
         rf = RandomForestRegressor(**params)
-        
+
         # fit Training model
         rf.fit(training_set_histo, training_set_vas)
         
-        # Making predictions and find RMSE
+        # Making predictions and find MAE
         y_pred = rf.predict(training_set_histo)
-        mse = mean_absolute_error(training_set_vas,y_pred)
+        mae = mean_absolute_error(training_set_vas,y_pred)
         
-    
-        # Return RMSE
-        return mse
+        # Return MAE
+        return mae
 
 
     def _trials(self):
+        """
+        Return the best result over the Hyperparameter space
+        """
         #Create Hyperparameter space
-     
-
         trials = Trials()
+
+        #Minimize a function over the Hyperparameter space
         best = fmin(self.objective,
             space=self.space,
             algo=tpe.suggest,
             max_evals=2,
             trials=trials)
 
-        print("BEESTTTT", best)
-        print("TRAILS RESULT", trials.results)
+        print("Best: ", best)
+        print("Trials Result: ", trials.results)
     
     
-    
-
-    def train_RFR(self, model_dump_path=None, n_jobs=1, train_by_max_score=True):
+    def train_RFR(self, model_dump_path=None, n_jobs=1, train_by_max_score=True, path_tree_fig=None, threshold=None):
         """
         Performs the model training procedure based on what was done in the preliminary clustering phase
         """
@@ -136,23 +141,24 @@ class ModelRFR:
             self.__calculate_sample_weights()
         if train_by_max_score == True:
             self.model = self.__train_maximizing_score(n_jobs=n_jobs)
+            self.__print(path_tree_fig=path_tree_fig, threshold=threshold)
             self._trials()
         else:
             self.model = self.__train()
+            self.__print(path_tree_fig=path_tree_fig, threshold=threshold)
         if model_dump_path is not None:
             self.__dump_on_pickle(model_dump_path)
 
            
-    
     def __train(self):
         """
-        Train RFT using fisher vectors calculated and vas indexes readed of the sequences.
-        Return the trained classifier
+        Train RFR using Random Forest Regressor calculated and vas indexes readed of the sequences.
+        Return the trained regressor
         """
 
         training_set_histo = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.train_video_idx])
         training_set_vas = np.asarray([self.vas_sequences[i] for i in self.train_video_idx])
-        model_rfr = RandomForestRegressor(n_estimators= 100, min_samples_split = 10, min_samples_leaf = 2, max_features = 'sqrt', max_depth = 110, criterion = 'squared_error', bootstrap = False)
+        model_rfr = RandomForestRegressor(n_estimators= 10, min_samples_split = 10, min_samples_leaf = 2, max_features = 'sqrt', max_depth = 110, criterion = 'squared_error', bootstrap = False)
         self.model = model_rfr.fit(training_set_histo, training_set_vas)
         return self.model
 
@@ -189,39 +195,30 @@ class ModelRFR:
                     'min_samples_split': min_samples_split,
                     'min_samples_leaf': min_samples_leaf,
                     'bootstrap': bootstrap}
+
+        #Randomized search on hyper parameters
         random_forest_randomized = RandomizedSearchCV(estimator=random_forest, param_distributions=random_grid,
-                                n_iter = 1, scoring='neg_mean_absolute_error', 
+                                n_iter = 20, scoring='neg_mean_absolute_error', 
                                 cv = None, verbose=1, random_state=None, n_jobs=-1,
                                 return_train_score=True).fit(training_set_desc, training_set_vas, sample_weight=self.sample_weights)
         best_params = random_forest_randomized.best_params_
         print("--- Best Params ---\n", best_params)
-        #random_forest_regressor = RandomForestRegressor(n_estimators= best_params['n_estimators'], min_samples_split = best_params['min_samples_split'], min_samples_leaf = best_params['min_samples_leaf'],
-        #                                max_features = best_params['max_features'], max_depth = best_params['max_depth'], criterion = best_params['criterion'], bootstrap = best_params['bootstrap'])
-        #param_grid = {'bootstrap': [True],
-        #              'max_depth': [80, 90, 100, 110],
-        #              'max_features': [2, 3],
-        #              'min_samples_leaf': [3, 4, 5],
-        #              'min_samples_split': [8, 10, 12],
-        #              'n_estimators': [100, 200, 300, 1000]
-        #            }
-        #grid_search = GridSearchCV(estimator = random_forest_regressor.fit(training_set_desc, training_set_vas, sample_weight=self.sample_weights), param_grid = param_grid, 
-        #                  cv = 5, n_jobs = -1, verbose = 1).fit(training_set_desc, training_set_vas, sample_weight=self.sample_weights)
-        #best_params = grid_search.best_params_
+        
         return RandomForestRegressor(n_estimators= best_params['n_estimators'], min_samples_split = best_params['min_samples_split'], min_samples_leaf = best_params['min_samples_leaf'],
                                         max_features = best_params['max_features'], max_depth = best_params['max_depth'], criterion = best_params['criterion'], bootstrap = best_params['bootstrap'])\
                                             .fit(training_set_desc, training_set_vas, sample_weight=self.sample_weights)
         
   
-
-    def __print(self,model_rfr):
-        for i in np.arange(len(model_rfr.estimators_)):
-            estimator=model_rfr.estimators_[i]
-            figure=plt.figure(figsize=(100, 100), dpi=80)
-            plt.clf()
-            plot_tree(estimator, 
-                    filled=True, impurity=True, 
-                    rounded=True)
-            figure.savefig('tree' + str(i) + '.png')
+    def __print(self, path_tree_fig, threshold):
+        estimator=self.model.estimators_[0]
+        figure=plt.figure(1,figsize=(100, 100), dpi=80)
+        plt.clf()
+        plot_tree(estimator, 
+                filled=True, impurity=True, 
+                rounded=True)
+        figure.savefig(path_tree_fig + str(threshold) + " _tree " + '.png')
+        plt.close
+       
 
 
     def __calculate_sample_weights(self):
@@ -288,7 +285,7 @@ class ModelRFR:
             plot_matrix(cm=train_confusion_matrix, labels=np.arange(0, 11), normalize=True, fname=path_scores_cm)
         mean_test_error = round(sum_test_error / num_test_videos, 3)
         mean_train_error = round(sum_train_error / num_train_videos, 3)
-        return mean_test_error, mean_train_error,test_confusion_matrix, train_confusion_matrix
+        return mean_test_error, mean_train_error, test_confusion_matrix, train_confusion_matrix
 
 
     def __predict(self, sequence_descriptor):
