@@ -6,7 +6,7 @@ import gc
 from PreliminaryClustering import PreliminaryClustering
 from ModelRFR import ModelRFR
 from configuration import config
-from utils import get_training_and_test_idx, check_existing_paths, plot_matrix, save_data_on_csv, save_GMM_mean_info
+from utils import get_training_and_test_idx, check_existing_paths, plot_matrix, save_data_on_csv, save_GMM_mean_info, plot_all_graphs
 
 """Script that allows you to train an SVR using a given number of kernels for preliminary 
 clustering."""
@@ -104,7 +104,7 @@ if __name__ == '__main__':
                                  preliminary_clustering=preliminary_clustering,
                                  weighted_samples=weighted_samples)
             print("-- Train and save SVR model... --")
-            model_rfr.train_RFR(n_jobs=n_jobs)
+            model_rfr.train_RFR(n_jobs=n_jobs, path_tree_fig=None, threshold = threshold_neutral, train_by_max_score= True)
             print("-- Calculate scores for trained SVR... --")
             current_test_path_error = path_errors+"errors_test_"+str(test_idx)+".csv"
             current_path_cm = path_confusion_matrices + "conf_matrix_test_" + str(test_idx) + ".png"
@@ -125,7 +125,7 @@ if __name__ == '__main__':
         current_path_clusters_png = path_gmm_means + "gmm_clusters_test_" + str(test_idx) + ".png"
         save_GMM_mean_info(preliminary_clustering.gmm.means, selected_lndks_idx, current_path_gmm_means_csv, current_path_clusters_png)
 
-    
+
     mean_test_error = sum(test_errors) / n_test
     mean__test_error = round(mean_test_error, 3)
     print("Total Mean Absolute Test Error: " + str(mean_test_error))
@@ -166,3 +166,21 @@ if __name__ == '__main__':
     plt.close()
     print("Histogram of the mean absolute error detected saved in a png file on path '" + path_results+"'")
     """
+
+    model_rfr_overfit = ModelRFR(seq_df_path=seq_df_path,
+                                 train_video_idx=train_videos,
+                                 test_video_idx=test_videos,
+                                 preliminary_clustering=preliminary_clustering,
+                                 weighted_samples=weighted_samples)
+    test_mae, train_mae = model_rfr_overfit.evaluate_overfitting(number_of_trees=100)
+    overfit_test_mae = []
+    overfit_test_mae.append(test_mae)
+    overfit_test_mae.append(train_mae)
+    plot_all_graphs(x=[i for i in np.arange(0,100)],
+                    y=[error for error in overfit_test_mae],
+                    x_label="Number of Tree", y_label= "Mean Absolute Error",
+                    name_labels=["test", "train"],    
+                    title="Mean Absolute Errors Overfit with "+str(n_kernels_GMM)+" kernels",
+                    file_path= "errors_test_train_overfit_graph.png")
+
+    

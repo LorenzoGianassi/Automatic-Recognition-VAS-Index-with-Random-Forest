@@ -1,4 +1,5 @@
 from os import error
+from tabnanny import verbose
 import pandas as pd
 import time
 import pickle
@@ -130,7 +131,7 @@ class ModelRFR:
         print("Trials Result: ", trials.results)
     
     
-    def train_RFR(self, model_dump_path=None, n_jobs=1, train_by_max_score=True, path_tree_fig=None, threshold=None):
+    def train_RFR(self, model_dump_path=None, n_jobs=1, train_by_max_score=False, path_tree_fig=None, threshold=None):
         """
         Performs the model training procedure based on what was done in the preliminary clustering phase
         """
@@ -141,15 +142,17 @@ class ModelRFR:
             self.__calculate_sample_weights()
         if train_by_max_score == True:
             self.model = self.__train_maximizing_score(n_jobs=n_jobs)
-            self.__print(path_tree_fig=path_tree_fig, threshold=threshold)
+            if path_tree_fig != None:
+                self.__print(path_tree_fig=path_tree_fig, threshold=threshold)
             self._trials()
         else:
             self.model = self.__train()
-            self.__print(path_tree_fig=path_tree_fig, threshold=threshold)
+            if path_tree_fig != None:
+                self.__print(path_tree_fig=path_tree_fig, threshold=threshold)
         if model_dump_path is not None:
             self.__dump_on_pickle(model_dump_path)
 
-           
+
     def __train(self):
         """
         Train RFR using Random Forest Regressor calculated and vas indexes readed of the sequences.
@@ -158,7 +161,7 @@ class ModelRFR:
 
         training_set_histo = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.train_video_idx])
         training_set_vas = np.asarray([self.vas_sequences[i] for i in self.train_video_idx])
-        model_rfr = RandomForestRegressor(n_estimators= 10, min_samples_split = 10, min_samples_leaf = 2, max_features = 'sqrt', max_depth = 110, criterion = 'squared_error', bootstrap = False)
+        model_rfr = RandomForestRegressor(n_estimators= 1, min_samples_split = 10, min_samples_leaf = 2, max_features = 'sqrt', max_depth = 110, criterion = 'squared_error', bootstrap = False)
         self.model = model_rfr.fit(training_set_histo, training_set_vas)
         return self.model
 
@@ -198,7 +201,7 @@ class ModelRFR:
 
         #Randomized search on hyper parameters
         random_forest_randomized = RandomizedSearchCV(estimator=random_forest, param_distributions=random_grid,
-                                n_iter = 20, scoring='neg_mean_absolute_error', 
+                                n_iter = 1, scoring='neg_mean_absolute_error', 
                                 cv = None, verbose=1, random_state=None, n_jobs=-1,
                                 return_train_score=True).fit(training_set_desc, training_set_vas, sample_weight=self.sample_weights)
         best_params = random_forest_randomized.best_params_
@@ -296,6 +299,21 @@ class ModelRFR:
             vas_predicted = 10
         return int(round(vas_predicted, 0))
 
+
+ # to test the overfitting of the model we test it with an increasing number of trees
+    def evaluate_overfitting(self,number_of_trees=50):
+        #default number of treees is 50
+        test_mae = []
+        train_mae = []
+        for iter in range(number_of_trees):
+            self.train_RFR()
+            mean_test_error, mean_train_error, test_confusion_matrix, train_confusion_matrix = self.evaluate_performance()
+            self.model.n_estimators +=1
+            test_mae.append(mean_test_error)
+            train_mae.append(mean_train_error)
+        return test_mae, train_mae
+    
+        
 
     def evaluate_performance_on_scaled_pain(self, path_scores_cm=None):
             test_set_desc = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.test_video_idx])

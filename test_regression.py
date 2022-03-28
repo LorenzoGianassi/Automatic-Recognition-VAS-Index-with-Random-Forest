@@ -60,7 +60,7 @@ else:
            and min(thresholds_neutral_to_test) > 0 and max(thresholds_neutral_to_test) < 1
     sub_directory = str(n_kernels_GMM) + "_kernels/"
 # Model classifier info and paths
-path_result = "data/test/" + sub_directory
+path_result = "data/test_regression/" + sub_directory
 
 
 n_jobs = config.n_jobs
@@ -76,7 +76,7 @@ def generate_and_test_model(threshold_neutral_configurations,
                          train_video_idx=train_videos, test_video_idx=test_videos,
                          preliminary_clustering=preliminary_clustering, weighted_samples=weighted_samples,
                          verbose=False)
-    model_rfr.train_RFR(n_jobs=n_jobs,  path_tree_fig=path_tree_fig, threshold = threshold_neutral_configurations)
+    model_rfr.train_RFR(n_jobs=n_jobs, path_tree_fig=path_tree_fig, threshold = threshold_neutral_configurations)
     return model_rfr.evaluate_performance()
 
 """Compare the best scores obtained by varying the thresholds used for the neutral configurations in the 
