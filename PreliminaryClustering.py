@@ -38,12 +38,17 @@ class PreliminaryClustering:
             print("---- Calculating velocities of the frames in dataset... ----")
         coord_df = pd.read_csv(self.coord_df_path)
         seq_df = pd.read_csv(self.seq_df_path)
+        print("coord_df:", coord_df)
+        print("seq_df:", seq_df)
         velocities = []
         for seq_num in np.arange(seq_df.shape[0]):
             lndks = coord_df.loc[coord_df['0'] == seq_num].values
             lndks = lndks[:, 2:]
+            print("lndks",lndks)
             nose_tip_x = lndks[:, 30]
             nose_tip_y = lndks[:, 30 + self.num_lndks]
+            print("nosex", nose_tip_x)
+            print("nosey", nose_tip_y)
             offset = np.hstack((np.repeat(nose_tip_x.reshape(-1, 1), self.num_lndks, axis=1),
                                 np.repeat(nose_tip_y.reshape(-1, 1), self.num_lndks, axis=1)))
             lndks_centered = lndks - offset

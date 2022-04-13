@@ -7,6 +7,7 @@ path = 'data/dataset/prova/' # Path the landmark folder containig the dataset
 subjects = [name for name in os.listdir(path)] # Retrieve all the subjects in the dataset
 
 filepath = Path('BioVid_Dataset/result.csv')  
+result = pd.DataFrame([])
 
 for i, sub in enumerate(subjects):
     
@@ -23,9 +24,18 @@ for i, sub in enumerate(subjects):
         
         for k, frame in enumerate(frames):
             data = np.load(path_frame + frame) # Read the data from the *.npy files (size is (68,2))
-
-     
             df = pd.DataFrame(data)
-            print("Data: ",df)
+            df = pd.DataFrame(np.expand_dims(df.values.reshape(-1),axis=1))
+            df = df.transpose()
             df.to_csv(filepath, index=False)
+            result = result.append(df)
+
+            
+            #df = pd.DataFrame(data)
+            #df = pd.DataFrame(np.expand_dims(df.values.reshape(-1),axis=1))
+            #result = result.append(df)
+            #print("Data: ",result)
+            #result.to_csv(filepath, index=False)
+            
+            
   
