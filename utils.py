@@ -7,6 +7,8 @@ from numpy import random
 import seaborn as sn
 import pandas as pd
 from sklearn import manifold
+from configuration import config
+from pathlib import Path 
 
 
 def check_existing_paths(dir_paths=[], file_paths=[]):
@@ -21,18 +23,39 @@ def check_existing_paths(dir_paths=[], file_paths=[]):
 
 
 def get_subjects_seq_idx(seq_df_path):
-    seq_df = pd.read_csv(seq_df_path)
     subjects_idxs = {}
     subject_count = 0
-    seq_name = ""
-    for seq_num in np.arange(seq_df.shape[0]):
-        if seq_num != 0 and seq_name[0:6] != seq_df.iloc[seq_num][0][0:6]:
-            subject_count += 1
-        if subject_count not in subjects_idxs:
-            subjects_idxs[subject_count] = []
-        subjects_idxs[subject_count].append(seq_num)
-        seq_name = seq_df.iloc[seq_num][0]
-        #print("subject_inx", subjects_idxs)
+    sequences_count = 0
+    if config.type_of_database == 'BioVid':
+        path = 'BioVid_dataset/' # Path the landmark folder containig the dataset
+        subjects = [name for name in os.listdir(path)] # Retrieve all the subjects in the dataset
+        for i, sub in enumerate(subjects):
+            
+            if sub == '102309_m_61': # Subject to ignore
+                continue
+            
+            path_sequences = path + sub + '/'
+            sequences = [name for name in os.listdir(path_sequences)] # Retrieve all the sequences of the current subject
+
+            for seq in sequences:
+                if subject_count not in subjects_idxs:
+                    subjects_idxs[subject_count] = []
+                subjects_idxs[subject_count].append(sequences_count)
+                sequences_count += 1    
+            subject_count +=1
+    else:    
+        seq_df = pd.read_csv(seq_df_path)
+        subjects_idxs = {}
+        subject_count = 0
+        seq_name = ""
+        for seq_num in np.arange(seq_df.shape[0]):
+            if seq_num != 0 and seq_name[0:6] != seq_df.iloc[seq_num][0][0:6]:
+                subject_count += 1
+            if subject_count not in subjects_idxs:
+                subjects_idxs[subject_count] = []
+            subjects_idxs[subject_count].append(seq_num)
+            seq_name = seq_df.iloc[seq_num][0]
+            #print("subject_inx", subjects_idxs)
     return subjects_idxs
 
 
@@ -51,9 +74,10 @@ def get_training_and_test_idx(num_videos, cross_val_protocol, seq_df_path):
             random.shuffle(get_training_idx)
             all_training_idx.append(get_training_idx)
     elif cross_val_protocol == "5-fold-cross-validation":
-        for subjects_test_offset in np.arange(0, num_subject, 5):
+        subject_iterator = num_subject/5
+        for subjects_test_offset in np.arange(0, num_subject, subject_iterator):
             idxs_test = []
-            subjects_offset = subjects_test_offset + 5
+            subjects_offset = subjects_test_offset + subject_iterator
             if subjects_offset >= len(subject_idxs):
                 subjects_offset = len(subject_idxs)
             for subject_test in np.arange(subjects_test_offset, subjects_offset):
@@ -65,11 +89,11 @@ def get_training_and_test_idx(num_videos, cross_val_protocol, seq_df_path):
             get_training_idx = np.delete(np.arange(0, num_videos), idxs_test)
             random.shuffle(get_training_idx)
             all_training_idx.append(get_training_idx)
+            
     elif cross_val_protocol == "Leave-One-Sequence-Out":
         for video_idx in np.arange(0, num_videos):
             all_test_idx.append(np.asarray([video_idx]))
             all_training_idx.append(np.delete(np.arange(0, num_videos), video_idx))
-
     return all_training_idx, all_test_idx
 
 

@@ -8,6 +8,10 @@ fit_by_bic = False
 # Number of clusters of the GMM (if fit_by_bic = True set a list of number of kernels, otherwise set an integer value)
 n_kernels_GMM = 16
 
+#Select the type of Database
+type_of_database = "BioVid"
+"""type_of_database: 'BioVid' or 'original'"""
+
 # Covariance type to use for the GMM fitting
 covariance_type = "full"
 """covariance_type: 'diag' or 'full' """

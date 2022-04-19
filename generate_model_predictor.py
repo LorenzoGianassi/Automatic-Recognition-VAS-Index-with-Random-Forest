@@ -15,15 +15,25 @@ clustering."""
 fit_by_bic = config.fit_by_bic
 
 # Dataset info
-coord_df_path = "data/dataset/2d_skeletal_data_unbc_coords.csv"
-seq_df_path = "data/dataset/2d_skeletal_data_unbc_sequence.csv"
-num_lndks = 66
+if config.type_of_database == 'BioVid':
+    coord_df_path ="data/dataset/BioVid_coords.csv"
+    seq_df_path = "data/dataset/BioVid_sequence.csv"
+    num_lndks = 67
+    num_videos = 250
+else:
+    coord_df_path = "data/dataset/2d_skeletal_data_unbc_coords.csv"
+    seq_df_path = "data/dataset/2d_skeletal_data_unbc_sequence.csv"
+    num_lndks = 66
+    num_videos = 200
 weighted_samples = config.weighted_samples
 # Features info
 selected_lndks_idx = config.improved_selected_lndks_idx
-num_videos = 200
+
 cross_val_protocol = config.cross_val_protocol
+
 train_video_idx, test_video_idx = get_training_and_test_idx(num_videos, cross_val_protocol, seq_df_path)
+
+
 # Preliminary clustering info and paths
 n_kernels_GMM = config.n_kernels_GMM
 threshold_neutral = config.threshold_neutral
@@ -79,7 +89,8 @@ if __name__ == '__main__':
         else:
             print("-- Execute preliminary clustering using " + str(n_kernels_GMM) + " kernels GMM... --")
         preliminary_clustering = PreliminaryClustering(coord_df_path=coord_df_path,
-                                                       seq_df_path=seq_df_path, num_lndks=num_lndks,
+                                                       seq_df_path=seq_df_path,
+                                                       num_lndks=num_lndks,
                                                        selected_lndks_idx=selected_lndks_idx,
                                                        train_video_idx=train_videos,
                                                        n_kernels=n_kernels_GMM,
@@ -103,9 +114,9 @@ if __name__ == '__main__':
                                  test_video_idx=test_videos,
                                  preliminary_clustering=preliminary_clustering,
                                  weighted_samples=weighted_samples)
-            print("-- Train and save SVR model... --")
+            print("-- Train and save RFR model... --")
             model_rfr.train_RFR(n_jobs=n_jobs, path_tree_fig=None, threshold = threshold_neutral, train_by_max_score= True)
-            print("-- Calculate scores for trained SVR... --")
+            print("-- Calculate scores for trained RFR... --")
             current_test_path_error = path_errors+"errors_test_"+str(test_idx)+".csv"
             current_path_cm = path_confusion_matrices + "conf_matrix_test_" + str(test_idx) + ".png"
             current_test_error, current_train_error, current_test_confusion_matrix, current_train_confusion_matrix = model_rfr.evaluate_performance(path_scores_parameters=current_test_path_error,path_scores_cm=current_path_cm)

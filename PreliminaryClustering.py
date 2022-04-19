@@ -5,6 +5,7 @@ from fishervector import FisherVectorGMM
 from sklearn.preprocessing import RobustScaler
 import matplotlib.pyplot as plt
 import matplotlib
+from configuration import config
 
 matplotlib.use('Agg')
 class PreliminaryClustering:
@@ -33,34 +34,28 @@ class PreliminaryClustering:
         Extract velocities of landmarks video sequences in dataset.
         Return a list of 2D array with velocities of the landmarks for each frame
         """
-
+        velocities = []
         if self.verbose:
             print("---- Calculating velocities of the frames in dataset... ----")
         coord_df = pd.read_csv(self.coord_df_path)
         seq_df = pd.read_csv(self.seq_df_path)
-        print("coord_df:", coord_df)
-        print("seq_df:", seq_df)
-        velocities = []
         for seq_num in np.arange(seq_df.shape[0]):
             lndks = coord_df.loc[coord_df['0'] == seq_num].values
             lndks = lndks[:, 2:]
-            print("lndks",lndks)
             nose_tip_x = lndks[:, 30]
             nose_tip_y = lndks[:, 30 + self.num_lndks]
-            print("nosex", nose_tip_x)
-            print("nosey", nose_tip_y)
             offset = np.hstack((np.repeat(nose_tip_x.reshape(-1, 1), self.num_lndks, axis=1),
                                 np.repeat(nose_tip_y.reshape(-1, 1), self.num_lndks, axis=1)))
             lndks_centered = lndks - offset
             lndk_vel = np.power(np.power(lndks_centered[0:lndks_centered.shape[0] - 1, 0:self.num_lndks] -
-                                         lndks_centered[1:lndks_centered.shape[0], 0:self.num_lndks], 2) +
+                                        lndks_centered[1:lndks_centered.shape[0], 0:self.num_lndks], 2) +
                                 np.power(lndks_centered[0:lndks_centered.shape[0] - 1, self.num_lndks:] -
-                                         lndks_centered[1:lndks_centered.shape[0], self.num_lndks:], 2),
+                                        lndks_centered[1:lndks_centered.shape[0], self.num_lndks:], 2),
                                 0.5)
             data_velocities = []
             for k in np.arange(1, lndk_vel.shape[0]):
                 data_velocities.append(np.array(lndk_vel[k, self.selected_lndks_idx]))
-            velocities.append(np.array(data_velocities))
+            velocities.append(np.array(data_velocities))  
         return velocities
 
     def __scale_features(self, velocities):
@@ -75,6 +70,7 @@ class PreliminaryClustering:
         features_all_frames = np.array([feature_frame for feature_video in velocities for feature_frame in feature_video])
         features_all_frames = RobustScaler().fit(features_train_frames).transform(features_all_frames)
         feat_count = 0
+        
         for video_idx, feature_video in enumerate(velocities):
             for frame_idx, feature_frame_idx in enumerate(feature_video):
                 velocities[video_idx][frame_idx][:] = features_all_frames[feat_count]
@@ -180,7 +176,7 @@ class PreliminaryClustering:
                 output += " (with threshold=" + str(
                     self.threshold_neutral) +")"
             output += "... ----"
-            #print(output)
+            
         seq_df = pd.read_csv(self.seq_df_path)
         index_neutral_configurations = []
         for seq_num in self.train_video_idx:
