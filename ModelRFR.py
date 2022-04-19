@@ -251,6 +251,8 @@ class ModelRFR:
         sum_train_error = 0
         test_confusion_matrix = np.zeros(shape=(11, 11))
         train_confusion_matrix = np.zeros(shape=(11, 11))
+        test_confusion_BioVid_matrix = np.zeros(shape=(5, 5))
+        train_confusion_BioVid_matrix = np.zeros(shape=(5, 5))
         real__vas = []
         predicted__vas = []
         if path_scores_parameters is not None:
@@ -267,7 +269,10 @@ class ModelRFR:
                     (np.array([self.test_video_idx[num_video], real_vas, vas_predicted, test_error]).reshape(1, -1)))
                 out_df_scores = out_df_scores.append(pd.Series(data.reshape(-1), index=out_df_scores.columns),
                                                      ignore_index=True)
-            test_confusion_matrix[real_vas][vas_predicted] += 1
+            if config.type_of_database == "BioVid":
+                test_confusion_BioVid_matrix[real_vas][vas_predicted] += 1
+            else:
+                test_confusion_matrix[real_vas][vas_predicted] += 1
         for num_video in np.arange(num_train_videos):
             real_vas = train_set_vas[num_video]
             real__vas.append(real_vas)
@@ -280,15 +285,25 @@ class ModelRFR:
                     (np.array([self.train_video_idx[num_video], real_vas, vas_predicted, train_error]).reshape(1, -1)))
                 out_df_scores = out_df_scores.append(pd.Series(data.reshape(-1), index=out_df_scores.columns),
                                                      ignore_index=True)
-            train_confusion_matrix[real_vas][vas_predicted] += 1
+            if config.type_of_database == "BioVid":
+                train_confusion_BioVid_matrix[real_vas][vas_predicted] += 1
+            else:
+                train_confusion_matrix[real_vas][vas_predicted] += 1
         if path_scores_parameters is not None:
             out_df_scores.to_csv(path_scores_parameters, index=False, header=True)
-        if path_scores_cm is not None:
-            plot_matrix(cm=test_confusion_matrix, labels=np.arange(0, 11), normalize=True, fname=path_scores_cm)
-            plot_matrix(cm=train_confusion_matrix, labels=np.arange(0, 11), normalize=True, fname=path_scores_cm)
+        if path_scores_cm is not None:    
+            if config.type_of_database == "BioVid":
+                plot_matrix(cm=test_confusion_BioVid_matrix, labels=np.arange(0, 5), normalize=True, fname=path_scores_cm)
+                plot_matrix(cm=train_confusion_BioVid_matrix, labels=np.arange(0, 5), normalize=True, fname=path_scores_cm)
+            else:
+                plot_matrix(cm=test_confusion_matrix, labels=np.arange(0, 11), normalize=True, fname=path_scores_cm)
+                plot_matrix(cm=train_confusion_matrix, labels=np.arange(0, 11), normalize=True, fname=path_scores_cm)
         mean_test_error = round(sum_test_error / num_test_videos, 3)
         mean_train_error = round(sum_train_error / num_train_videos, 3)
-        return mean_test_error, mean_train_error, test_confusion_matrix, train_confusion_matrix
+        if config.type_of_database == "BioVid":
+            return mean_test_error, mean_train_error, test_confusion_BioVid_matrix, train_confusion_BioVid_matrix
+        else:
+            return mean_test_error, mean_train_error, test_confusion_matrix, train_confusion_matrix
 
 
     def __predict(self, sequence_descriptor):

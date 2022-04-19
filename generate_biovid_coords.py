@@ -32,7 +32,7 @@ for i, sub in enumerate(subjects):
             
             result = result.append(df)         
             result.to_csv(filepath, index=False)
-            
+            print(result)
         sequences_indx += 1
 
 

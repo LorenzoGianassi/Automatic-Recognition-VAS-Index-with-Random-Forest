@@ -73,6 +73,8 @@ if __name__ == '__main__':
     best_errors_list = []
     confusion_test_matrix = np.zeros(shape=(11, 11))
     confusion_train_matrix = np.zeros(shape=(11, 11))
+    confusion_test_BioVid_matrix = np.zeros(shape=(5, 5))
+    confusion_train_BioVid_matrix = np.zeros(shape=(5, 5))
     confusion_matrix_test_pain_levels = np.zeros(shape=(3, 3))
     confusion_matrix_train_pain_levels = np.zeros(shape=(3, 3))
     if fit_by_bic:
@@ -124,11 +126,18 @@ if __name__ == '__main__':
             test_errors.append(current_test_error)
             train_errors.append(current_train_error)
             print("-- Mean Absolute Test Error: " + str(current_test_error)+" --")
-            confusion_test_matrix += current_test_confusion_matrix
-            confusion_matrix_test_pain_levels += current_cm_pain_level
-            print("-- Mean Absolute Train Error: " + str(current_train_error)+" --")
-            confusion_train_matrix += current_train_confusion_matrix
-            confusion_matrix_train_pain_levels += current_cm_pain_level
+            if config.type_of_database == "BioVid":
+                confusion_test_BioVid_matrix += current_test_confusion_matrix
+                confusion_matrix_test_pain_levels += current_cm_pain_level
+                print("-- Mean Absolute Train Error: " + str(current_train_error)+" --")
+                confusion_train_BioVid_matrix += current_train_confusion_matrix
+                confusion_matrix_train_pain_levels += current_cm_pain_level
+            else:
+                confusion_test_matrix += current_test_confusion_matrix
+                confusion_matrix_test_pain_levels += current_cm_pain_level
+                print("-- Mean Absolute Train Error: " + str(current_train_error)+" --")
+                confusion_train_matrix += current_train_confusion_matrix
+                confusion_matrix_train_pain_levels += current_cm_pain_level
 
         #out_df_scores = save_data_on_csv([test_idx+1, n_kernels_current_GMM, threshold_current_clustering, num_relevant_config, current_error],
         #                            out_df_scores, path_results_csv)
@@ -153,17 +162,31 @@ if __name__ == '__main__':
     print("Mean absolute errors detected at each round saved in a csv file on path '" + path_results_csv+"'")
     print("Confusion matrices detected at each round saved in png files on path '" + path_confusion_matrices+"'")
 
-    plot_matrix(cm=confusion_test_matrix, labels=np.arange(0, 11), normalize=True, fname=path_conf_test_matrix)
-    print("Overall confusion test matrix saved in png files on path '" + path_conf_test_matrix+"'")
-    labels_cm = ["no pain", "weak pain", "severe pain"]
-    plot_matrix(cm=confusion_matrix_test_pain_levels, labels=labels_cm, normalize=True, fname=path_conf_test_matrix_pain_levels)
-    print("Overall confusion test matrix on pain level saved in png files on path '" + path_conf_test_matrix_pain_levels + "'")
+    if config.type_of_database == "BioVid":
+        plot_matrix(cm=confusion_test_BioVid_matrix, labels=np.arange(0, 5), normalize=True, fname=path_conf_test_matrix)
+        print("Overall confusion test matrix saved in png files on path '" + path_conf_test_matrix+"'")
+        labels_cm = ["no pain", "weak pain", "severe pain"]
+        plot_matrix(cm=confusion_matrix_test_pain_levels, labels=labels_cm, normalize=True, fname=path_conf_test_matrix_pain_levels)
+        print("Overall confusion test matrix on pain level saved in png files on path '" + path_conf_test_matrix_pain_levels + "'")
 
-    plot_matrix(cm=confusion_train_matrix, labels=np.arange(0, 11), normalize=True, fname=path_conf_train_matrix)
-    print("Overall confusion train matrix saved in png files on path '" + path_conf_train_matrix+"'")
-    labels_cm = ["no pain", "weak pain", "severe pain"]
-    plot_matrix(cm=confusion_matrix_train_pain_levels, labels=labels_cm, normalize=True, fname=path_conf_train_matrix_pain_levels)
-    print("Overall confusion train matrix on pain level saved in png files on path '" + path_conf_train_matrix_pain_levels + "'")
+        plot_matrix(cm=confusion_train_BioVid_matrix, labels=np.arange(0, 5), normalize=True, fname=path_conf_train_matrix)
+        print("Overall confusion train matrix saved in png files on path '" + path_conf_train_matrix+"'")
+        labels_cm = ["no pain", "weak pain", "severe pain"]
+        plot_matrix(cm=confusion_matrix_train_pain_levels, labels=labels_cm, normalize=True, fname=path_conf_train_matrix_pain_levels)
+        print("Overall confusion train matrix on pain level saved in png files on path '" + path_conf_train_matrix_pain_levels + "'")
+    else:
+        plot_matrix(cm=confusion_test_matrix, labels=np.arange(0, 11), normalize=True, fname=path_conf_test_matrix)
+        print("Overall confusion test matrix saved in png files on path '" + path_conf_test_matrix+"'")
+        labels_cm = ["no pain", "weak pain", "severe pain"]
+        plot_matrix(cm=confusion_matrix_test_pain_levels, labels=labels_cm, normalize=True, fname=path_conf_test_matrix_pain_levels)
+        print("Overall confusion test matrix on pain level saved in png files on path '" + path_conf_test_matrix_pain_levels + "'")
+
+        plot_matrix(cm=confusion_train_matrix, labels=np.arange(0, 11), normalize=True, fname=path_conf_train_matrix)
+        print("Overall confusion train matrix saved in png files on path '" + path_conf_train_matrix+"'")
+        labels_cm = ["no pain", "weak pain", "severe pain"]
+        plot_matrix(cm=confusion_matrix_train_pain_levels, labels=labels_cm, normalize=True, fname=path_conf_train_matrix_pain_levels)
+        print("Overall confusion train matrix on pain level saved in png files on path '" + path_conf_train_matrix_pain_levels + "'")
+
 
     """
     plt.clf()
