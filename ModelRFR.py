@@ -335,7 +335,10 @@ class ModelRFR:
             test_set_vas = np.asarray([self.vas_sequences[i] for i in self.test_video_idx])
             num_test_videos = test_set_desc.shape[0]
             confusion_matrix = np.zeros(shape=(3, 3))
-            dict_pain_level = {0: 0, 1: 1, 2: 1, 3: 1, 4: 2, 5: 2, 6: 2, 7: 2, 8: 2, 9: 2, 10: 2}
+            if config.type_of_database == "BioVid":
+                dict_pain_level = {0: 0, 1: 1, 2: 1, 3: 1, 4: 2}
+            else:
+                dict_pain_level = {0: 0, 1: 1, 2: 1, 3: 1, 4: 2, 5: 2, 6: 2, 7: 2, 8: 2, 9: 2, 10: 2}
             labels_cm = ["no pain", "weak pain", "severe pain"]
             for num_video in np.arange(num_test_videos):
                 real_vas = test_set_vas[num_video]

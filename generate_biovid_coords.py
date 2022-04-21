@@ -11,6 +11,7 @@ filepath = Path('data/dataset/BioVid_coords.csv')
 result = pd.DataFrame([])
 
 sequences_indx = 0.0
+count = 0
 
 for i, sub in enumerate(subjects):
     
@@ -31,9 +32,12 @@ for i, sub in enumerate(subjects):
             df = df.shift(periods=1, fill_value=sequences_indx, axis="columns")
             
             result = result.append(df)         
-            result.to_csv(filepath, index=False)
-            print(result)
+            
+            count += 1
+            #print(count)
         sequences_indx += 1
+    print(sub)
+result.to_csv(filepath, index=False)        
 
 
             
