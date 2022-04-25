@@ -117,7 +117,7 @@ if __name__ == '__main__':
                                  preliminary_clustering=preliminary_clustering,
                                  weighted_samples=weighted_samples)
             print("-- Train and save RFR model... --")
-            model_rfr.train_RFR(n_jobs=n_jobs, path_tree_fig=None, threshold = threshold_neutral, train_by_max_score= True)
+            model_rfr.train_RFR(n_jobs=n_jobs, path_tree_fig=path_results, threshold = threshold_neutral, train_by_max_score= False)
             print("-- Calculate scores for trained RFR... --")
             current_test_path_error = path_errors+"errors_test_"+str(test_idx)+".csv"
             current_path_cm = path_confusion_matrices + "conf_matrix_test_" + str(test_idx) + ".png"

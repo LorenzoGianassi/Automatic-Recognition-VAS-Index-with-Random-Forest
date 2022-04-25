@@ -50,6 +50,8 @@ class ModelRFR:
         self.verbose = verbose # define if the output must be printed in the class
         self.weighted_samples = weighted_samples  # define if the samples must be weighted for the model fitting
         self.sample_weights = None  # sample weights (populated only if weighted_samples=True)
+        self.random_forest_regressor = RandomForestRegressor(random_state = 42)
+        
 
 
     def __generate_descriptors_relevant_configuration(self):
@@ -149,6 +151,8 @@ class ModelRFR:
             self.model = self.__train()
             if path_tree_fig != None:
                 self.__print(path_tree_fig=path_tree_fig, threshold=threshold)
+            if config.num_tree == True:
+                self.plot_results(self.__grid_search(),path_tree_fig=path_tree_fig)
         if model_dump_path is not None:
             self.__dump_on_pickle(model_dump_path)
 
@@ -171,17 +175,17 @@ class ModelRFR:
             print("---- Find parameters that minimizes mean absolute error... ----")
         training_set_desc = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.train_video_idx])
         training_set_vas = np.asarray([self.vas_sequences[i] for i in self.train_video_idx])
-        random_forest = RandomForestRegressor()
+
 
         # Grid creation
         # Number of trees in random forest
-        n_estimators = [int(x) for x in np.linspace(start = 200, stop = 2000, num = 10)]
+        n_estimators = [int(x) for x in np.linspace(start = 1, stop = 51, num = 10)]
         # Number of features to consider at every split
         max_features = ['auto', 'sqrt']
         # Criterion
         criterion = ["squared_error", "absolute_error", "poisson"]
         # Maximum number of levels in tree
-        max_depth = [int(x) for x in np.linspace(10, 110, num = 11)]
+        max_depth = [int(x) for x in np.linspace(1, 51, num = 2)]
         max_depth.append(None)
         # Minimum number of samples required to split a node
         min_samples_split = [2, 5, 10]
@@ -200,8 +204,8 @@ class ModelRFR:
                     'bootstrap': bootstrap}
 
         #Randomized search on hyper parameters
-        random_forest_randomized = RandomizedSearchCV(estimator=random_forest, param_distributions=random_grid,
-                                n_iter = 1, scoring='neg_mean_absolute_error', 
+        random_forest_randomized = RandomizedSearchCV(estimator=self.random_forest_regressor, param_distributions=random_grid,
+                                n_iter = 10, scoring='neg_mean_absolute_error', 
                                 cv = None, verbose=1, random_state=None, n_jobs=-1,
                                 return_train_score=True).fit(training_set_desc, training_set_vas, sample_weight=self.sample_weights)
         best_params = random_forest_randomized.best_params_
@@ -211,7 +215,78 @@ class ModelRFR:
                                         max_features = best_params['max_features'], max_depth = best_params['max_depth'], criterion = best_params['criterion'], bootstrap = best_params['bootstrap'])\
                                             .fit(training_set_desc, training_set_vas, sample_weight=self.sample_weights)
         
-  
+    def __grid_search(self):
+        if self.verbose:
+            print("---- Perform Grid Search from the result of random search... ----")
+        
+        training_set_desc = np.asarray([self.desc_relevant_config_videos[i].flatten() for i in self.train_video_idx])
+        training_set_vas = np.asarray([self.vas_sequences[i] for i in self.train_video_idx])
+
+        # Create the parameter grid based on the results of random search 
+        param_grid = {
+            'bootstrap': [True],
+            'max_depth': [80, 90, 100, 110],
+            'max_features': [2, 3],
+            'min_samples_leaf': [3, 4, 5],
+            'min_samples_split': [8, 10, 12],
+            'n_estimators': [100, 200, 300, 1000]
+        }
+
+        # Instantiate the grid search model
+        grid_search = GridSearchCV(estimator = self.random_forest_regressor, param_grid = param_grid, 
+                                cv = 5, n_jobs = -1, verbose = 1, return_train_score=True)
+
+        grid_search.fit(training_set_desc, training_set_vas)
+
+        final_model = grid_search.best_estimator_
+
+        # Grid with only the number of trees changed
+        tree_grid = {'n_estimators': [int(x) for x in np.linspace(1, 301, 30)]}
+
+        # Create the grid search model and fit to the training data
+        tree_grid_search = GridSearchCV(final_model, param_grid=tree_grid, verbose = 1, n_jobs=-1, cv = 5,
+                                        scoring = 'neg_mean_absolute_error', return_train_score=True)
+        tree_grid_search.fit(training_set_desc, training_set_vas)
+        tree_grid_search.cv_results_
+        return tree_grid_search
+
+
+    def plot_results(self, model, path_tree_fig, param = 'n_estimators', name = 'Num Trees'):
+        param_name = 'param_%s' % param
+
+        # Extract information from the cross validation model
+        train_scores = model.cv_results_['mean_train_score']
+        test_scores = model.cv_results_['mean_test_score']
+        train_time = model.cv_results_['mean_fit_time']
+        param_values = list(model.cv_results_[param_name])
+        
+        # Plot the scores over the parameter
+        plt.subplots(1, 2, figsize=(10, 6))
+        plt.subplot(121)
+        plt.plot(param_values, train_scores, 'bo-', label = 'train')
+        plt.plot(param_values, test_scores, 'go-', label = 'test')
+        plt.ylim(ymin = -10, ymax = 0)
+        plt.legend()
+        plt.xlabel(name)
+        plt.ylabel('Neg Mean Absolute Error')
+        plt.title('Score vs %s' % name)
+        
+        
+        plt.subplot(122)
+        plt.plot(param_values, train_time, 'ro-')
+        plt.ylim(ymin = 0.0, ymax = 2.0)
+        plt.xlabel(name)
+        plt.ylabel('Train Time (sec)')
+        plt.title('Training Time vs %s' % name)
+        
+        
+        plt.tight_layout(pad = 4)
+
+        plt.savefig(path_tree_fig +'numTree.png')
+        plt.close()
+
+      
+    
     def __print(self, path_tree_fig, threshold):
         estimator=self.model.estimators_[0]
         figure=plt.figure(1,figsize=(100, 100), dpi=80)

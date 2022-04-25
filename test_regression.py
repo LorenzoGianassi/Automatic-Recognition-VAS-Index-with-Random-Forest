@@ -24,11 +24,19 @@ clustering."""
 fit_by_bic = config.fit_by_bic
 
 # Dataset info
-coord_df_path = "data/dataset/2d_skeletal_data_unbc_coords.csv"
-seq_df_path = "data/dataset/2d_skeletal_data_unbc_sequence.csv"
-num_lndks = 66
+if config.type_of_database == 'BioVid':
+    coord_df_path ="data/dataset/BioVid_coords.csv"
+    seq_df_path = "data/dataset/BioVid_sequence.csv"
+    num_lndks = 67
+    num_videos = 500
+else:
+    coord_df_path = "data/dataset/2d_skeletal_data_unbc_coords.csv"
+    seq_df_path = "data/dataset/2d_skeletal_data_unbc_sequence.csv"
+    num_lndks = 66
+    num_videos = 200
 weighted_samples = config.weighted_samples
 # Features info
+
 
 # Eyes, Mouth, Eyes+Mouth, Standard
 selected_lndks_idx = [[30, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47],
@@ -43,7 +51,7 @@ path = ["eyes/","nose/","mouth/","eyes+nose+mouth/","standard/"]
 all_graph_error_value = []
 all_graph_relevant_config_value = []
 
-num_videos = 200
+
 cross_val_protocol = config.cross_val_protocol
 train_video_idx, test_video_idx = get_training_and_test_idx(num_videos, cross_val_protocol, seq_df_path)
 n_test = len(train_video_idx)
@@ -60,7 +68,17 @@ else:
            and min(thresholds_neutral_to_test) > 0 and max(thresholds_neutral_to_test) < 1
     sub_directory = str(n_kernels_GMM) + "_kernels/"
 # Model classifier info and paths
-path_result = "data/test_regression/" + sub_directory
+if config.type_of_database == "BioVid":
+    if config.hyperparameter == True:
+        path_result = "data/test_regression/" +sub_directory + "BioVid_Dataset_Optimized/"      
+    else:
+        path_result = "data/test_regression/"  +sub_directory +"BioVid_Dataset/" 
+else:
+    if config.hyperparameter == True:
+        path_result = "data/test_regression/"  +sub_directory + "UNBC_Dataset_Optimized/"     
+    else:
+        path_result = "data/test_regression/" +sub_directory +  "UNBC_Dataset/"      
+#path_result = "data/test_regression/" + "BioVid_Dataset" +sub_directory
 
 
 n_jobs = config.n_jobs
@@ -76,7 +94,10 @@ def generate_and_test_model(threshold_neutral_configurations,
                          train_video_idx=train_videos, test_video_idx=test_videos,
                          preliminary_clustering=preliminary_clustering, weighted_samples=weighted_samples,
                          verbose=False)
-    model_rfr.train_RFR(n_jobs=n_jobs, path_tree_fig=path_tree_fig, threshold = threshold_neutral_configurations)
+    if config.hyperparameter == True:
+        model_rfr.train_RFR(n_jobs=n_jobs, path_tree_fig=path_tree_fig, threshold = threshold_neutral_configurations, train_by_max_score=config.hyperparameter)
+    else:
+        model_rfr.train_RFR(n_jobs=n_jobs, path_tree_fig=path_tree_fig, threshold = threshold_neutral_configurations)
     return model_rfr.evaluate_performance()
 
 """Compare the best scores obtained by varying the thresholds used for the neutral configurations in the 
@@ -98,6 +119,8 @@ def compare_performance_with_different_thresholds(path_tree_fig=None):
             threshold_sum_relevant_config = 0
             confusion_matrix = np.zeros(shape=(11, 11))
             confusion_train_matrix = np.zeros(shape=(11, 11))
+            confusion_test_BioVid_matrix = np.zeros(shape=(5, 5))
+            confusion_train_BioVid_matrix = np.zeros(shape=(5, 5))
             print("Execute experiments using threshold=" + str(threshold) + "...")
             for test_idx in np.arange(0, n_test_for_threshold):
                 print("---- Round "+str(test_idx+1)+"/"+str(n_test_for_threshold)+"... ----")
@@ -120,8 +143,12 @@ def compare_performance_with_different_thresholds(path_tree_fig=None):
                     threshold_sum_relevant_config += len(preliminary_clustering.index_relevant_configurations)
                     errors.append(current_error)
                     errors_train.append(current_train_error)
-                    confusion_matrix += current_cm
-                    confusion_train_matrix += current_train_cm
+                    if config.type_of_database == "BioVid":
+                        confusion_test_BioVid_matrix += current_cm
+                        confusion_train_BioVid_matrix += current_train_cm
+                    else:
+                        confusion_matrix += current_cm
+                        confusion_train_matrix += current_train_cm    
             if len(errors) == 0:
                 threshold_sum_error = "None"
             else:
@@ -137,8 +164,12 @@ def compare_performance_with_different_thresholds(path_tree_fig=None):
                                              out_df_scores, path_result_thresholds)
             path_current_cm = path_cm + "confusion_matrix_"+str(threshold)+".png"
             path_current_train_cm = path_cm + "confusion_train_matrix_"+str(threshold)+".png"
-            plot_matrix(cm=confusion_matrix, labels=np.arange(0, 11), normalize=True, fname=path_current_cm)
-            plot_matrix(cm=confusion_train_matrix, labels=np.arange(0, 11), normalize=True, fname=path_current_train_cm)
+            if config.type_of_database == "BioVid":
+                plot_matrix(cm=confusion_test_BioVid_matrix, labels=np.arange(0, 5), normalize=True, fname=path_current_cm)
+                plot_matrix(cm=confusion_train_BioVid_matrix, labels=np.arange(0, 5), normalize=True, fname=path_current_train_cm)
+            else:
+                plot_matrix(cm=confusion_matrix, labels=np.arange(0, 11), normalize=True, fname=path_current_cm)
+                plot_matrix(cm=confusion_train_matrix, labels=np.arange(0, 11), normalize=True, fname=path_current_train_cm)
 
             mean_error = sum(errors) / n_test
             mean_error = round(mean_error, 3)
@@ -248,12 +279,12 @@ if __name__ == '__main__':
                 str(n_kernels_GMM)+" kernels, "+
                 covariance_type+" covariance and "+cross_val_protocol+")")
             compare_performance_different_thresholds_by_BIC()
-            print("End test with GMM fitted by BIC with "+ str(n_kernels_GMM) +" kernels: results saved in csv files with path '"+path_result+"'")
+            print("End test with GMM fitted by BIC with "+ str(n_kernels_GMM) + " kernels: results saved in csv files with path '" + path_result +"'")
         else:
             print("Execute tests with different thresholds for the neutral configurations (using "+str(n_kernels_GMM)+" kernels, "+
                 covariance_type+" covariance and "+cross_val_protocol+")")
             compare_performance_with_different_thresholds(path_tree_fig=path_tree_fig)
-            print("End test with n_kernels= " + str(n_kernels_GMM) + ": results saved in a csv file with path '"+path_result+"'")
+            print("End test with n_kernels= " + str(n_kernels_GMM) + ": results saved in a csv file with path '" + path_result + "'")
             print("--- OPERAZIONE time: %s seconds ---" % (time.time() - start_time))
 
     plot_all_graphs(x=[threshold for threshold in thresholds_neutral_to_test],

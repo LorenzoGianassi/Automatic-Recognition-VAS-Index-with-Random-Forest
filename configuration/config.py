@@ -12,6 +12,12 @@ n_kernels_GMM = 16
 type_of_database = "BioVid"
 """type_of_database: 'BioVid' or 'original'"""
 
+#Select use of Hyperparameter
+hyperparameter = False
+
+#Select the creaction of num_tree.png
+num_tree = False
+
 # Covariance type to use for the GMM fitting
 covariance_type = "full"
 """covariance_type: 'diag' or 'full' """
@@ -44,7 +50,7 @@ all_selected_lndks_idx = [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30
                       41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
                       65]
 
-n_jobs = 8  # Number of threads to use to perform SVR training
+n_jobs = 8  # Number of threads to use to perform RFR training
 
 # Type of protocol to be used to evaluate the performance of the models
 cross_val_protocol = "5-fold-cross-validation"
