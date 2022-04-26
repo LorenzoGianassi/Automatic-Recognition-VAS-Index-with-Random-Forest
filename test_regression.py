@@ -28,25 +28,34 @@ if config.type_of_database == 'BioVid':
     coord_df_path ="data/dataset/BioVid_coords.csv"
     seq_df_path = "data/dataset/BioVid_sequence.csv"
     num_lndks = 67
-    num_videos = 500
+    num_videos = 1500
+
+    # Features info
+
+    # Eyes, Mouth, Eyes+Mouth, Standard
+    selected_lndks_idx = [[range(0,67)]]
+
+    path = ["all_landmarks"]    
+
 else:
     coord_df_path = "data/dataset/2d_skeletal_data_unbc_coords.csv"
     seq_df_path = "data/dataset/2d_skeletal_data_unbc_sequence.csv"
     num_lndks = 66
     num_videos = 200
+
+    # Features info
+
+    # Eyes, Mouth, Eyes+Mouth, Standard
+    selected_lndks_idx = [[30, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47],
+    [27, 28, 29, 30, 31, 32, 33, 34, 35],
+    [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65],
+    [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,65],                 
+    [5, 11, 19, 24, 30, 37, 41, 44, 46, 50, 52, 56, 58], [range(0,66)]]
+
+    path = ["eyes/","nose/","mouth/","eyes+nose+mouth/","standard/", "all_landmarks"]    
+
 weighted_samples = config.weighted_samples
-# Features info
-
-
-# Eyes, Mouth, Eyes+Mouth, Standard
-selected_lndks_idx = [[30, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47],
-[27, 28, 29, 30, 31, 32, 33, 34, 35],
-[48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65],
-[17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
-41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,65],                 
-[5, 11, 19, 24, 30, 37, 41, 44, 46, 50, 52, 56, 58]]
-
-path = ["eyes/","nose/","mouth/","eyes+nose+mouth/","standard/"]    
 
 all_graph_error_value = []
 all_graph_relevant_config_value = []
@@ -287,19 +296,35 @@ if __name__ == '__main__':
             print("End test with n_kernels= " + str(n_kernels_GMM) + ": results saved in a csv file with path '" + path_result + "'")
             print("--- OPERAZIONE time: %s seconds ---" % (time.time() - start_time))
 
-    plot_all_graphs(x=[threshold for threshold in thresholds_neutral_to_test],
-                    y=[error for error in all_graph_error_value],
-                    x_label="Threshold", y_label= "Mean Absolute Error",
-                    name_labels=["eyes","nose","mouth","nose+eyes+mouth","standard"],    
-                    title="Mean Absolute Errors with "+str(n_kernels_GMM)+" kernels",
-                    file_path=path_result + "errors_graph.png")
+    if config.type_of_database == "BioVid":
+        plot_all_graphs(x=[threshold for threshold in thresholds_neutral_to_test],
+                        y=[error for error in all_graph_error_value],
+                        x_label="Threshold", y_label= "Mean Absolute Error",
+                        name_labels=["all_landmarks"],    
+                        title="Mean Absolute Errors with "+str(n_kernels_GMM)+" kernels",
+                        file_path=path_result + "errors_graph.png")
 
-    plot_all_graphs(x=[threshold for threshold in thresholds_neutral_to_test],
-                    y=[error for error in all_graph_relevant_config_value],
-                    x_label="Threshold", y_label="Number of relevant configurations",
-                    name_labels=["eyes","nose","mouth","nose+eyes+mouth","standard"],    
-                    title="Number of relevant configurations with "+str(n_kernels_GMM)+" kernels",
-                    file_path=path_result + "relevant_config_graph.png")
+        plot_all_graphs(x=[threshold for threshold in thresholds_neutral_to_test],
+                        y=[error for error in all_graph_relevant_config_value],
+                        x_label="Threshold", y_label="Number of relevant configurations",
+                        name_labels=["all_landmarks"],    
+                        title="Number of relevant configurations with "+str(n_kernels_GMM)+" kernels",
+                        file_path=path_result + "relevant_config_graph.png")
+    else:
+        plot_all_graphs(x=[threshold for threshold in thresholds_neutral_to_test],
+                y=[error for error in all_graph_error_value],
+                x_label="Threshold", y_label= "Mean Absolute Error",
+                name_labels=["eyes","nose","mouth","nose+eyes+mouth","standard","all_landmarks"],    
+                title="Mean Absolute Errors with "+str(n_kernels_GMM)+" kernels",
+                file_path=path_result + "errors_graph.png")
+
+        plot_all_graphs(x=[threshold for threshold in thresholds_neutral_to_test],
+                        y=[error for error in all_graph_relevant_config_value],
+                        x_label="Threshold", y_label="Number of relevant configurations",
+                        name_labels=["eyes","nose","mouth","nose+eyes+mouth","standard","all_landmarks"],    
+                        title="Number of relevant configurations with "+str(n_kernels_GMM)+" kernels",
+                        file_path=path_result + "relevant_config_graph.png")
+
 
 
     
