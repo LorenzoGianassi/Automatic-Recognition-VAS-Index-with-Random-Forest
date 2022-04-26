@@ -185,7 +185,7 @@ class ModelRFR:
         # Criterion
         criterion = ["squared_error", "absolute_error", "poisson"]
         # Maximum number of levels in tree
-        max_depth = [int(x) for x in np.linspace(1, 51, num = 2)]
+        max_depth = [int(x) for x in np.linspace(20, 71, num = 2)]
         max_depth.append(None)
         # Minimum number of samples required to split a node
         min_samples_split = [2, 5, 10]

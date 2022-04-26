@@ -35,7 +35,7 @@ if config.type_of_database == 'BioVid':
     # Eyes, Mouth, Eyes+Mouth, Standard
     selected_lndks_idx = [range(0,67)]
 
-    path = ["all_landmarks"]    
+    path = ["all_landmarks/"]    
 
 else:
     coord_df_path = "data/dataset/2d_skeletal_data_unbc_coords.csv"
@@ -53,7 +53,7 @@ else:
     41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,65],                 
     [5, 11, 19, 24, 30, 37, 41, 44, 46, 50, 52, 56, 58], [range(0,66)]]
 
-    path = ["eyes/","nose/","mouth/","eyes+nose+mouth/","standard/", "all_landmarks"]    
+    path = ["eyes/","nose/","mouth/","eyes+nose+mouth/","standard/", "all_landmarks/"]    
 
 weighted_samples = config.weighted_samples
 
