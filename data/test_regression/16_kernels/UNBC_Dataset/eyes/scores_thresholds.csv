@@ -1,9 +1,3 @@
-Thresholds Neutral Configurations,#clusters,Mean Absolute Error
-0.1,7.6,2.576
-0.15,9.6,2.784
-0.2,9.6,2.623
-0.25,10.8,2.908
-0.3,12.2,3.003
-0.35,14.0,2.924
-0.4,15.0,2.681
-0.45,15.6,2.611
+version https://git-lfs.github.com/spec/v1
+oid sha256:7da0c248d1030b5ed61828488cbedb26836995243c1039d3881f019812d0b111
+size 194

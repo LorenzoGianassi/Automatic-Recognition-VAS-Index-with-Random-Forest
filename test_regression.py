@@ -33,7 +33,7 @@ if config.type_of_database == 'BioVid':
     # Features info
 
     # Eyes, Mouth, Eyes+Mouth, Standard
-    selected_lndks_idx = [[range(0,67)]]
+    selected_lndks_idx = [range(0,67)]
 
     path = ["all_landmarks"]    
 
