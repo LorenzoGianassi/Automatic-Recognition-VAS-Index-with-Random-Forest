@@ -390,8 +390,8 @@ class ModelRFR:
         return int(round(vas_predicted, 0))
 
 
- # to test the overfitting of the model we test it with an increasing number of trees
-    def evaluate_overfitting(self,number_of_trees=50):
+ # to test the overfit of the model we test it with an increasing number of trees
+    def evaluate_overfit(self,number_of_trees=50):
         #default number of treees is 50
         test_mae = []
         train_mae = []

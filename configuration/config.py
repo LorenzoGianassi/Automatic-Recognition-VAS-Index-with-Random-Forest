@@ -9,7 +9,7 @@ fit_by_bic = False
 n_kernels_GMM = 16
 
 #Select the type of Database
-type_of_database = "BioVid"
+type_of_database = "BiVid"
 """type_of_database: 'BioVid' or 'original'"""
 
 #Select use of Hyperparameter

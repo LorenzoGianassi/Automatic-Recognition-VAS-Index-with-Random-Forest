@@ -206,7 +206,7 @@ if __name__ == '__main__':
                                  test_video_idx=test_videos,
                                  preliminary_clustering=preliminary_clustering,
                                  weighted_samples=weighted_samples)
-    test_mae, train_mae = model_rfr_overfit.evaluate_overfitting(number_of_trees=100)
+    test_mae, train_mae = model_rfr_overfit.evaluate_overfit(number_of_trees=100)
     overfit_test_mae = []
     overfit_test_mae.append(test_mae)
     overfit_test_mae.append(train_mae)

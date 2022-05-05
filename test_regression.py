@@ -28,7 +28,7 @@ if config.type_of_database == 'BioVid':
     coord_df_path ="data/dataset/BioVid_coords.csv"
     seq_df_path = "data/dataset/BioVid_sequence.csv"
     num_lndks = 67
-    num_videos = 1500
+    num_videos = 2500
 
     # Features info
 
@@ -51,7 +51,7 @@ else:
     [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65],
     [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
     41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,65],                 
-    [5, 11, 19, 24, 30, 37, 41, 44, 46, 50, 52, 56, 58], [range(0,66)]]
+    [5, 11, 19, 24, 30, 37, 41, 44, 46, 50, 52, 56, 58], range(0,66)]
 
     path = ["eyes/","nose/","mouth/","eyes+nose+mouth/","standard/", "all_landmarks/"]    
 

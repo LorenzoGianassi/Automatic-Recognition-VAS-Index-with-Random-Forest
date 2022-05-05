@@ -61,7 +61,7 @@ def get_subjects_seq_idx(seq_df_path):
 
 def get_training_and_test_idx(num_videos, cross_val_protocol, seq_df_path):
     subject_idxs = get_subjects_seq_idx(seq_df_path)
-    num_subject = len(subject_idxs)
+    num_subject = 25
     all_training_idx = []
     all_test_idx = []
     if cross_val_protocol == "Leave-One-Subject-Out":
