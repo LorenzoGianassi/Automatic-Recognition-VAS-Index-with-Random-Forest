@@ -48,12 +48,10 @@ else:
     # Eyes, Mouth, Eyes+Mouth, Standard
     selected_lndks_idx = [[30, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47],
     [27, 28, 29, 30, 31, 32, 33, 34, 35],
-    [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65],
-    [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
-    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,65],                 
-    [5, 11, 19, 24, 30, 37, 41, 44, 46, 50, 52, 56, 58], range(0,66)]
+    [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65],                 
+    [5, 11, 19, 24, 30, 37, 41, 44, 46, 50, 52, 56, 58]]
 
-    path = ["eyes/","nose/","mouth/","eyes+nose+mouth/","standard/", "all_landmarks/"]    
+    path = ["eyes/","nose/","mouth/","standard/"]    
 
 weighted_samples = config.weighted_samples
 
@@ -281,7 +279,11 @@ if __name__ == '__main__':
         file_paths = [coord_df_path, seq_df_path]
         path_errors = dir_paths[0] + "errors_tests/"
         check_existing_paths(dir_paths=dir_paths, file_paths=file_paths)
-      
+        if config.type_of_database == "BioVid":
+            landmark_name = ["all_landmarks"]
+        else:
+            landmark_name = ["eyes","nose","mouth","standard"]
+
         current_lndks_idx = selected_lndks_idx[i]
         if fit_by_bic:
             print("Execute tests with different thresholds for the neutral configurations (using GMM fitted by BIC with " +
@@ -290,6 +292,7 @@ if __name__ == '__main__':
             compare_performance_different_thresholds_by_BIC()
             print("End test with GMM fitted by BIC with "+ str(n_kernels_GMM) + " kernels: results saved in csv files with path '" + path_result +"'")
         else:
+            print("Execute tests for "+ landmark_name[i] + " landmarks ")
             print("Execute tests with different thresholds for the neutral configurations (using "+str(n_kernels_GMM)+" kernels, "+
                 covariance_type+" covariance and "+cross_val_protocol+")")
             compare_performance_with_different_thresholds(path_tree_fig=path_tree_fig)
@@ -314,14 +317,14 @@ if __name__ == '__main__':
         plot_all_graphs(x=[threshold for threshold in thresholds_neutral_to_test],
                 y=[error for error in all_graph_error_value],
                 x_label="Threshold", y_label= "Mean Absolute Error",
-                name_labels=["eyes","nose","mouth","nose+eyes+mouth","standard","all_landmarks"],    
+                name_labels=["eyes","nose","mouth","standard"],    
                 title="Mean Absolute Errors with "+str(n_kernels_GMM)+" kernels",
                 file_path=path_result + "errors_graph.png")
 
         plot_all_graphs(x=[threshold for threshold in thresholds_neutral_to_test],
                         y=[error for error in all_graph_relevant_config_value],
                         x_label="Threshold", y_label="Number of relevant configurations",
-                        name_labels=["eyes","nose","mouth","nose+eyes+mouth","standard","all_landmarks"],    
+                        name_labels=["eyes","nose","mouth","standard"],    
                         title="Number of relevant configurations with "+str(n_kernels_GMM)+" kernels",
                         file_path=path_result + "relevant_config_graph.png")
 

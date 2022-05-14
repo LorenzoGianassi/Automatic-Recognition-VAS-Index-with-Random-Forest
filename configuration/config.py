@@ -9,11 +9,11 @@ fit_by_bic = False
 n_kernels_GMM = 16
 
 #Select the type of Database
-type_of_database = "BiVid"
+type_of_database = "BioVid"
 """type_of_database: 'BioVid' or 'original'"""
 
 #Select use of Hyperparameter
-hyperparameter = False
+hyperparameter = True
 
 #Select the creaction of num_tree.png
 num_tree = False
@@ -53,7 +53,7 @@ all_selected_lndks_idx = [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30
 n_jobs = 8  # Number of threads to use to perform RFR training
 
 # Type of protocol to be used to evaluate the performance of the models
-cross_val_protocol = "5-fold-cross-validation"
+cross_val_protocol = "Leave-One-Subject-Out"
 """cross_val_protocol:  'Leave-One-Subject-Out' or '5-fold-cross-validation' or 'Leave-One-Sequence-Out'"""
 
 
@@ -75,4 +75,4 @@ save_histo_figures = False
 weighted_samples = True
 
 # Thresholds to test
-thresholds_neutral_to_test = np.arange(0.1, 0.5, 0.05)
+thresholds_neutral_to_test = np.arange(0.3, 0.5, 0.05)
