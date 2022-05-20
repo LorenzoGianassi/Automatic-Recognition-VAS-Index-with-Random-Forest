@@ -6,6 +6,7 @@
 # print in tabella dei vari errori: mean, R2, average
 
 from distutils.log import error
+from genericpath import exists
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -279,6 +280,7 @@ if __name__ == '__main__':
         file_paths = [coord_df_path, seq_df_path]
         path_errors = dir_paths[0] + "errors_tests/"
         check_existing_paths(dir_paths=dir_paths, file_paths=file_paths)
+
         if config.type_of_database == "BioVid":
             landmark_name = ["all_landmarks"]
         else:

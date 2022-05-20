@@ -13,7 +13,7 @@ type_of_database = "BioVid"
 """type_of_database: 'BioVid' or 'original'"""
 
 #Select use of Hyperparameter
-hyperparameter = True
+hyperparameter = False
 
 #Select the creaction of num_tree.png
 num_tree = False
@@ -75,4 +75,4 @@ save_histo_figures = False
 weighted_samples = True
 
 # Thresholds to test
-thresholds_neutral_to_test = np.arange(0.3, 0.5, 0.05)
+thresholds_neutral_to_test = np.arange(0.1, 0.5, 0.05)
