@@ -40,7 +40,6 @@ To run the code you can use one of this two script:
 - ```generate_model_predictor.py``` : it performs the training of the model with a number of kernels of the GMM and a threshold of the neutral configurations. The number of kernels and the value of threshold used can be defined inside the file ```config.py```.<br/> At the end of the process a confusion matrix one for the test set and one train set are obtained. Futhermore a grapic representation of one randomly selected decision tree from the forest is generated.
 - ```test_regression.py``` : it performs the training of the model by cycling over a set of thresholds definded a priori in ```config.py``` and a sets of definded landmarks.<br/> At the end of process a folder will be created for each group of landmarks. Inside of them the confusion matrices of train set and test set, the graphs of the mean absulute error, the decision trees and a graph of the total mean absolute error are generated threshold by threshold. Furthermore a graph containing the mean absolute error of each set of landmarks as shown in the figure below 
 ![](Images/UNBC_Dataset_Optimized-5-fold_errors_graph.png) <br/>
-You can switch the different Scenes and try to menage values with the provided GUI.
 ## Set the Parameters <a name="8"/>
 To set the parameters you have to change the values inside the ```config.py``` file. <br/>
 You can set the following parameters:
