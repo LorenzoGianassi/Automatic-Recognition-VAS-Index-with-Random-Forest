@@ -16,7 +16,7 @@ if config.type_of_database == 'BioVid':
     coord_df_path ="data/dataset/BioVid_coords.csv"
     seq_df_path = "data/dataset/BioVid_sequence.csv"
     num_lndks = 67
-    num_videos = 500
+    num_videos = 2500
 else:
     coord_df_path = "data/dataset/2d_skeletal_data_unbc_coords.csv"
     seq_df_path = "data/dataset/2d_skeletal_data_unbc_sequence.csv"
