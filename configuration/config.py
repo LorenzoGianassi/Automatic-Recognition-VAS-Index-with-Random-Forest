@@ -7,7 +7,7 @@ import numpy as np
 n_kernels_GMM = 16
 
 #Select the type of Database
-type_of_database = "original"
+type_of_database = "BioVid"
 """type_of_database: 'BioVid' or 'original'"""
 
 #Select use of Hyperparameter
@@ -51,7 +51,7 @@ all_selected_lndks_idx = [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30
 n_jobs = 8  # Number of threads to use to perform RFR training
 
 # Type of protocol to be used to evaluate the performance of the models
-cross_val_protocol = "Leave-One-Subject-Out"
+cross_val_protocol = "Leave-One-Sequence-Out"
 """cross_val_protocol:  'Leave-One-Subject-Out' or '5-fold-cross-validation' or 'Leave-One-Sequence-Out'"""
 
 # PARAMETERS USED BY THE SCRIPT generate_model_predictor.py
