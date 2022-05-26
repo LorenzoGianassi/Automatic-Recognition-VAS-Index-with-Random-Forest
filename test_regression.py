@@ -21,9 +21,6 @@ from utils import get_training_and_test_idx, check_existing_paths, plot_error_gr
 """Script that allows you to train an Random Forest Regressor using a given number of kernels for preliminary 
 clustering."""
 
-# Type of test info
-fit_by_bic = config.fit_by_bic
-
 # Dataset info
 if config.type_of_database == 'BioVid':
     coord_df_path ="data/dataset/BioVid_coords.csv"
@@ -59,35 +56,29 @@ weighted_samples = config.weighted_samples
 all_graph_error_value = []
 all_graph_relevant_config_value = []
 
-
 cross_val_protocol = config.cross_val_protocol
 train_video_idx, test_video_idx = get_training_and_test_idx(num_videos, cross_val_protocol, seq_df_path)
 n_test = len(train_video_idx)
+
 # Preliminary clustering info and paths
 n_kernels_GMM = config.n_kernels_GMM
 covariance_type = config.covariance_type
 thresholds_neutral_to_test = config.thresholds_neutral_to_test
-if fit_by_bic:
-    assert isinstance(n_kernels_GMM, list) and min(n_kernels_GMM) > 0 \
-           and min(thresholds_neutral_to_test) > 0 and max(thresholds_neutral_to_test) < 1
-    sub_directory = "fit_by_bic/"
-else:
-    assert isinstance(n_kernels_GMM, int) and n_kernels_GMM > 0 \
-           and min(thresholds_neutral_to_test) > 0 and max(thresholds_neutral_to_test) < 1
-    sub_directory = str(n_kernels_GMM) + "_kernels/"
+assert isinstance(n_kernels_GMM, int) and n_kernels_GMM > 0 \
+        and min(thresholds_neutral_to_test) > 0 and max(thresholds_neutral_to_test) < 1
+sub_directory = str(n_kernels_GMM) + "_kernels/"
+
 # Model classifier info and paths
 if config.type_of_database == "BioVid":
     if config.hyperparameter == True:
-        path_result = "data/test_regression/" +sub_directory + "BioVid_Dataset_Optimized/"      
+        path_result = "data/test_regression/" +sub_directory + config.cross_val_protocol + "/BioVid_Dataset_Optimized/"      
     else:
-        path_result = "data/test_regression/"  +sub_directory +"BioVid_Dataset/" 
+        path_result = "data/test_regression/"  +sub_directory +  config.cross_val_protocol + "/BioVid_Dataset/" 
 else:
     if config.hyperparameter == True:
-        path_result = "data/test_regression/"  +sub_directory + "UNBC_Dataset_Optimized/"     
+        path_result = "data/test_regression/"  +sub_directory + config.cross_val_protocol + "/UNBC_Dataset_Optimized/"     
     else:
-        path_result = "data/test_regression/" +sub_directory +  "UNBC_Dataset/"      
-#path_result = "data/test_regression/" + "BioVid_Dataset" +sub_directory
-
+        path_result = "data/test_regression/" +sub_directory + config.cross_val_protocol + "/UNBC_Dataset/"      
 
 n_jobs = config.n_jobs
 
@@ -108,8 +99,7 @@ def generate_and_test_model(threshold_neutral_configurations,
         model_rfr.train_RFR(n_jobs=n_jobs, path_tree_fig=path_tree_fig, threshold = threshold_neutral_configurations)
     return model_rfr.evaluate_performance()
 
-"""Compare the best scores obtained by varying the thresholds used for the neutral configurations in the 
-preliminary clustering. 
+"""Compare the best scores obtained by varying the thresholds used for the neutral configurations in the preliminary clustering. 
 The respective value of the parameter input to the script is used as the kernel number of the preliminary clustering gmm.
 Save the results in a csv file containing the comparison of the best scores found for each threshold """
 
@@ -141,8 +131,7 @@ def compare_performance_with_different_thresholds(path_tree_fig=None):
                                                                n_kernels=n_kernels_GMM,
                                                                covariance_type=covariance_type,
                                                                verbose=False,
-                                                               threshold_neutral=threshold,
-                                                               fit_by_bic=fit_by_bic)
+                                                               threshold_neutral=threshold)
                 preliminary_clustering.execute_preliminary_clustering()
                 if len(preliminary_clustering.index_relevant_configurations) > 0:
                     current_error, current_train_error, current_cm, current_train_cm = generate_and_test_model(
@@ -203,69 +192,6 @@ def compare_performance_with_different_thresholds(path_tree_fig=None):
     all_graph_relevant_config_value.append([thresholds_results[result]["relevant_config"] for result in thresholds_results])
  
 
-def update_results_by_BIC(dict_results_kernels):
-    for n_kernels in dict_results_kernels:
-        thresholds = []
-        mean_absolute_errors = []
-        num_relevant_config = []
-        for threshold in dict_results_kernels[n_kernels]:
-            thresholds.append(threshold)
-            num_occ = dict_results_kernels[n_kernels][threshold]["count"]
-            num_relevant_config.append(round(dict_results_kernels[n_kernels][threshold]["num_config"] / num_occ, 2))
-            mean_absolute_errors.append(round(dict_results_kernels[n_kernels][threshold]["error"] / num_occ, 3))
-        out_df_scores = pd.DataFrame(columns=['Thresholds Neutral Configurations', '#clusters', 'Mean Absolute Error'])
-        check_existing_paths(dir_paths=[path_result + str(n_kernels)+"_kernels"])
-        path_results_scores = path_result + str(n_kernels)+"_kernels/results.csv"
-        for threshold_idx in np.arange(len(thresholds)):
-            data = np.hstack((np.array([thresholds[threshold_idx], num_relevant_config[threshold_idx], mean_absolute_errors[threshold_idx]]).reshape(1, -1)))
-            out_df_scores = out_df_scores.append(pd.Series(data.reshape(-1), index=out_df_scores.columns),ignore_index=True)
-        out_df_scores.to_csv(path_results_scores, index=False, header=True)
-
-def plot_results_graph_by_BIC(dict_results_kernels):
-    for n_kernels in dict_results_kernels:
-        path_results_graph = path_result + str(n_kernels) + "_kernels/results_graph.png"
-        plot_graph(x=[threshold for threshold in dict_results_kernels[n_kernels]],
-                   y=[dict_results_kernels[n_kernels][threshold]["error"] for threshold in dict_results_kernels[n_kernels]],
-                   x_label="Threshold", y_label="Mean Absolute Error",
-                   title="Graphics Mean Absolute Errors",
-                   file_path=path_results_graph)
-
-def compare_performance_different_thresholds_by_BIC():
-    dict_results_kernels = {}
-    n_test_for_threshold = len(train_video_idx)
-    for threshold_idx in np.arange(len(thresholds_neutral_to_test)):
-        threshold = round(thresholds_neutral_to_test[threshold_idx], 3)
-        print("Execute experiments using threshold=" + str(threshold) + "...")
-        for round_idx in np.arange(n_test_for_threshold):
-            print("---- Round " + str(round_idx + 1) + "/" + str(n_test_for_threshold) + "... ----")
-            test_videos = test_video_idx[round_idx]
-            train_videos = train_video_idx[round_idx]
-            preliminary_clustering = PreliminaryClustering(coord_df_path=coord_df_path,
-                                                           seq_df_path=seq_df_path, num_lndks=num_lndks,
-                                                           selected_lndks_idx=current_lndks_idx,
-                                                           train_video_idx=train_videos,
-                                                           n_kernels=n_kernels_GMM,
-                                                           covariance_type=covariance_type,
-                                                           verbose=False,
-                                                           threshold_neutral=threshold,
-                                                           fit_by_bic=config.fit_by_bic)
-            preliminary_clustering.execute_preliminary_clustering()
-            n_kernels_current_GMM = preliminary_clustering.n_kernels
-            num_relevant_config = len(preliminary_clustering.index_relevant_configurations)
-            if n_kernels_current_GMM not in dict_results_kernels:
-                dict_results_kernels[n_kernels_current_GMM] = {}
-            if threshold not in dict_results_kernels[n_kernels_current_GMM]:
-                dict_results_kernels[n_kernels_current_GMM][threshold] = {"error": 0, "num_config": 0, "count": 0}
-            if num_relevant_config > 0:
-                current_error, _ = generate_and_test_model(
-                    threshold_neutral_configurations=threshold, preliminary_clustering=preliminary_clustering,
-                    train_videos=train_videos, test_videos=test_videos)
-                dict_results_kernels[n_kernels_current_GMM][threshold]["error"] += current_error
-            dict_results_kernels[n_kernels_current_GMM][threshold]["num_config"] += num_relevant_config
-            dict_results_kernels[n_kernels_current_GMM][threshold]["count"] += 1
-        update_results_by_BIC(dict_results_kernels)
-    plot_results_graph_by_BIC(dict_results_kernels)
-
 if __name__ == '__main__':
     for i in range (0,len(selected_lndks_idx)):
         dir_paths = [path_result + path[i]]
@@ -273,10 +199,9 @@ if __name__ == '__main__':
         path_tree_fig = dir_paths[0] + "random_tree_figures/"
         path_error = dir_paths[0] + "errors_tests/"
         start_time = time.time()
-        if not fit_by_bic:
-            dir_paths.append(path_cm)
-            dir_paths.append(path_tree_fig)
-            dir_paths.append(path_error)
+        dir_paths.append(path_cm)
+        dir_paths.append(path_tree_fig)
+        dir_paths.append(path_error)
         file_paths = [coord_df_path, seq_df_path]
         path_errors = dir_paths[0] + "errors_tests/"
         check_existing_paths(dir_paths=dir_paths, file_paths=file_paths)
@@ -287,19 +212,13 @@ if __name__ == '__main__':
             landmark_name = ["eyes","nose","mouth","standard"]
 
         current_lndks_idx = selected_lndks_idx[i]
-        if fit_by_bic:
-            print("Execute tests with different thresholds for the neutral configurations (using GMM fitted by BIC with " +
-                str(n_kernels_GMM)+" kernels, "+
-                covariance_type+" covariance and "+cross_val_protocol+")")
-            compare_performance_different_thresholds_by_BIC()
-            print("End test with GMM fitted by BIC with "+ str(n_kernels_GMM) + " kernels: results saved in csv files with path '" + path_result +"'")
-        else:
-            print("Execute tests for "+ landmark_name[i] + " landmarks ")
-            print("Execute tests with different thresholds for the neutral configurations (using "+str(n_kernels_GMM)+" kernels, "+
-                covariance_type+" covariance and "+cross_val_protocol+")")
-            compare_performance_with_different_thresholds(path_tree_fig=path_tree_fig)
-            print("End test with n_kernels= " + str(n_kernels_GMM) + ": results saved in a csv file with path '" + path_result + "'")
-            print("--- OPERAZIONE time: %s seconds ---" % (time.time() - start_time))
+
+        print("Execute tests for "+ landmark_name[i] + " landmarks ")
+        print("Execute tests with different thresholds for the neutral configurations (using "+str(n_kernels_GMM)+" kernels, "+
+            covariance_type+" covariance and "+cross_val_protocol+")")
+        compare_performance_with_different_thresholds(path_tree_fig=path_tree_fig)
+        print("End test with n_kernels= " + str(n_kernels_GMM) + ": results saved in a csv file with path '" + path_result + "'")
+        print("--- OPERAZIONE time: %s seconds ---" % (time.time() - start_time))
 
     if config.type_of_database == "BioVid":
         plot_all_graphs(x=[threshold for threshold in thresholds_neutral_to_test],

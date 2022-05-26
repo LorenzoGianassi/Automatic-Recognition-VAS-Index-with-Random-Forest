@@ -3,13 +3,11 @@ import numpy as np
 
 # PARAMETERS USED BY ALL SCRIPTS
 
-# Define if the GMM must be fitted minimized BIC from more than one kernels number
-fit_by_bic = False
 # Number of clusters of the GMM (if fit_by_bic = True set a list of number of kernels, otherwise set an integer value)
 n_kernels_GMM = 16
 
 #Select the type of Database
-type_of_database = "BioVid"
+type_of_database = "original"
 """type_of_database: 'BioVid' or 'original'"""
 
 #Select use of Hyperparameter
@@ -55,7 +53,6 @@ n_jobs = 8  # Number of threads to use to perform RFR training
 # Type of protocol to be used to evaluate the performance of the models
 cross_val_protocol = "Leave-One-Subject-Out"
 """cross_val_protocol:  'Leave-One-Subject-Out' or '5-fold-cross-validation' or 'Leave-One-Sequence-Out'"""
-
 
 # PARAMETERS USED BY THE SCRIPT generate_model_predictor.py
 

@@ -12,13 +12,12 @@ class PreliminaryClustering:
     """Class that is responsible for obtaining the relevant configurations for the classification of the VAS index. """
 
     def __init__(self, coord_df_path, seq_df_path, num_lndks, selected_lndks_idx, train_video_idx, n_kernels,
-                 threshold_neutral, covariance_type='diag', verbose=True, fit_by_bic=False):
+                 threshold_neutral, covariance_type='diag', verbose=True):
         self.coord_df_path = coord_df_path  # Path of csv file contained coordinates of the landmarks
         self.seq_df_path = seq_df_path  # Path of csv file contained sequences informations
         self.num_lndks = num_lndks  # Number of landmarks for each frame of the videos in the dataset
         self.selected_lndks_idx = selected_lndks_idx  # Indexes of the landmarks to considered to the clustering
         self.train_video_idx = train_video_idx  # Indexes of the videos to use for training
-        self.fit_by_bic = fit_by_bic  # Define if the GMM must be fitted using fit by bic
         self.threshold_neutral = threshold_neutral  # Thresholds to use fo extraction of the neutral configurations
         self.n_kernels = n_kernels  # Number of kernels of the gmm to trained
         self.covariance_type = covariance_type  # type of the covariance matrix to use for the GMM fitting
@@ -106,21 +105,10 @@ class PreliminaryClustering:
         Return the fitted GMM
         """
 
-        if self.fit_by_bic:
-            if self.verbose:
-                print("---- Generate GMM with fitting by BIC... ----")
-            gmm = FisherVectorGMM(covariance_type=self.covariance_type).fit_by_bic(
-                X=train_frames_features, choices_n_kernels=self.n_kernels, verbose=self.verbose)
-            n_kernels_current_GMM = len(gmm.means)
-            if self.fit_by_bic and isinstance(self.threshold_neutral, list):
-                self.threshold_neutral = self.threshold_neutral[self.n_kernels.index(n_kernels_current_GMM)]
-            self.n_kernels = n_kernels_current_GMM
-            return gmm
-        else:
-            if self.verbose:
-                print("---- Generate GMM with " + str(self.n_kernels) + " kernels... ----")
-            return FisherVectorGMM(n_kernels=self.n_kernels, covariance_type=self.covariance_type).fit(
-                X=train_frames_features, verbose=False)
+        if self.verbose:
+            print("---- Generate GMM with " + str(self.n_kernels) + " kernels... ----")
+        return FisherVectorGMM(n_kernels=self.n_kernels, covariance_type=self.covariance_type).fit(
+            X=train_frames_features, verbose=False)
 
     def __calculate_FV(self, velocities):
         """
@@ -148,13 +136,9 @@ class PreliminaryClustering:
             print("---- Generate histograms of video sequences... ----")
         histograms_of_videos = []
         for video_fv in self.fisher_vectors:
-            #print("videofv", video_fv)
             current_video_fv = video_fv[0]
-            #print("currentvideo", current_video_fv)
             video_histogram = np.zeros(self.n_kernels)
-            #print("video histogram", video_histogram)
             for frame in current_video_fv:
-                #print("frame", frame)
                 for index_configuration in range(0, self.n_kernels):
                     video_histogram[index_configuration] += sum(frame[index_configuration]) + \
                                                             sum(frame[index_configuration + self.n_kernels])
