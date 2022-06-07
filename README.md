@@ -35,6 +35,21 @@ To install this project locally you need to clone this repository with the comma
 ```sh
 git clone https://github.com/LorenzoGianassi/Automatic-Recognition-VAS-Index-with-Random-Forest.git
 ```
+To download the folder data\dataset you have to install Git Large File Storage at the following link : [Git LFS](https://git-lfs.github.com/).<br/>
+The next step is to run this command:
+```sh
+git lfs install
+```
+
+If the Git LFS generate errors due to the limited bandwidth you can download the folder dataset at this link : [Dataset Folder](https://downgit.github.io/#/home?url=https:%2F%2Fgithub.com%2FLorenzoGianassi%2FAutomatic-Recognition-VAS-Index-with-Random-Forest%2Fblob%2Fgh-pages%2Fdata%2Fdataset%2Fdataset.7z).<br/>
+Then put the extracted file (dataset folder) inside the folder ```data```.<br/>
+
+
+As regard the dependecies they are reported inside the file ```requirements.txt```. You can install them using the command 
+```sh
+pip install -r requirements.txt
+```
+
 ## Run the Code <a name="7"/>
 To run the code you can use one of this two script:
 - ```generate_model_predictor.py``` : it performs the training of the model with a number of kernels of the GMM and a threshold of the neutral configurations. The number of kernels and the value of threshold used can be defined inside the file ```config.py```.<br/> At the end of the process a confusion matrix one for the test set and one train set are obtained. Futhermore a grapic representation of one randomly selected decision tree from the forest is generated.
