@@ -32,7 +32,7 @@ The project is based on two scripts called ```PreliminaryClustering.py``` and ``
 # Usage <a name="5"/>
 ## Installation <a name="6"/>
 To install this project locally you need to clone this repository with the command
-```sh
+```
 git clone https://github.com/LorenzoGianassi/Automatic-Recognition-VAS-Index-with-Random-Forest.git
 ```
 To download the folder data\dataset you have to install Git Large File Storage at the following link : [Git LFS](https://git-lfs.github.com/).<br/>
@@ -41,7 +41,9 @@ The next step is to run this command:
 git lfs install
 ```
 
-If the Git LFS generate errors due to the limited bandwidth you can download the folder dataset at this link : [Dataset Folder](https://downgit.github.io/#/home?url=https:%2F%2Fgithub.com%2FLorenzoGianassi%2FAutomatic-Recognition-VAS-Index-with-Random-Forest%2Fblob%2Fgh-pages%2Fdata%2Fdataset%2Fdataset.7z).<br/>
+If the Git LFS generate this error due to the limited bandwidth : <br/>
+```"This repository is over its data quota. Account responsible for LFS bandwidth should purchase more data packs to restore access."```<br/>
+You can download the entire project as file .zip from this repo and then replace the folder dataset with the one at this downloadable link : [Dataset Folder](https://downgit.github.io/#/home?url=https:%2F%2Fgithub.com%2FLorenzoGianassi%2FAutomatic-Recognition-VAS-Index-with-Random-Forest%2Fblob%2Fgh-pages%2Fdata%2Fdataset%2Fdataset.7z).<br/>
 Then put the extracted file (dataset folder) inside the folder ```data```.<br/>
 
 
